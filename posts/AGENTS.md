@@ -1,6 +1,6 @@
 ---
 title: Awesome AI Agents
-date: 2025-10-12
+date: 2025-01-12
 ---
 
 # 🔮 Awesome AI Agents
