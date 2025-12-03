@@ -10,6 +10,9 @@
     "kaggle": "awesomething",
     "linkedin": "henryebomah"
   },
+  "newsletter": {
+    "showTwitterBanner": false
+  },
   "seo": {
     "title": "Henry Ebomah",
     "description": "Blog of an AI Engineer",
