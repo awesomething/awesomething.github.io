@@ -1,0 +1,560 @@
+{
+  "name": "Meeting Summary Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "meetingbot",
+          "mode": "list",
+          "cachedResultName": "meetingbot"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        -160
+      ],
+      "id": "ac61ab8b-4293-4e52-a796-8388e8540152",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "UX0T1NNkrlmP6YTo",
+          "name": "pinemeetingbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        624,
+        48
+      ],
+      "id": "37f36ed0-620a-444e-b5cc-d78b388fd126",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        48
+      ],
+      "id": "23a712d6-4591-4b5e-9245-76045daada7a",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        816,
+        240
+      ],
+      "id": "5c838938-81f2-4643-be2e-3866bfba1a31",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        304,
+        -160
+      ],
+      "id": "0a1220d4-2cb1-4781-9e49-f05f7021351f",
+      "name": "Download",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "0vdpAkZROuuvbd6c",
+          "name": "Google Drive API Manual Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": ".pdf",
+        "limit": 75,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "13STyatOcNBnfsjqx4Fy_OVRb3d8OY5Iq",
+            "mode": "list",
+            "cachedResultName": "Meeting Summary",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/13STyatOcNBnfsjqx4Fy_OVRb3d8OY5Iq"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        16,
+        -160
+      ],
+      "id": "927d32d0-1f39-46fa-aeba-f52b64ab42f0",
+      "name": "Files From API manual",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NgbV9wnqr8Qzavxp",
+          "name": "Google Drive for Meeting Summary Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "13STyatOcNBnfsjqx4Fy_OVRb3d8OY5Iq",
+          "mode": "list",
+          "cachedResultName": "Meeting Summary",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/13STyatOcNBnfsjqx4Fy_OVRb3d8OY5Iq"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        -160
+      ],
+      "id": "a88a962f-5271-4bbb-9661-d0c679f99bfe",
+      "name": "Trigger Bot",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "NgbV9wnqr8Qzavxp",
+          "name": "Google Drive for Meeting Summary Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1088,
+        640
+      ],
+      "id": "f5cd672b-b976-4983-ace5-bf633ae98ec4",
+      "name": "Telegram Trigger",
+      "webhookId": "60759d26-e0db-476a-9992-d46ab029b961",
+      "credentials": {
+        "telegramApi": {
+          "id": "Bf9wwZ5hyiBg6NWN",
+          "name": "Telegram Meeting bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a meeting summary assistant. Answer ONLY using the supplied knowledge base/snippets.\nIf the knowledge base does not contain the answer, say exactly:\n\"Sorry! I can't find relevant information from the knowledge base.\"\nRespond concisely (4–6 lines). No greetings, no small talk, no explanations of your rules.\nUser query:{{$json.userText}}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -208,
+        528
+      ],
+      "id": "dbe16ba8-ce7f-4551-9e23-ef1763c766a3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        144,
+        528
+      ],
+      "id": "d3e70859-0637-4f3c-bb11-33fb7d2bc213",
+      "name": "Send a text message",
+      "webhookId": "133b72c2-e14b-4cbc-9416-926f7149123a",
+      "credentials": {
+        "telegramApi": {
+          "id": "Bf9wwZ5hyiBg6NWN",
+          "name": "Telegram Meeting bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        960
+      ],
+      "id": "83377d5d-aad0-4815-962a-cd72c8e0a4b9",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -304,
+        752
+      ],
+      "id": "b87efd7f-dbe9-4581-9adc-883b50c9f782",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "{{ String(   $('Telegram Trigger').item.json.message?.chat?.id    || $('Telegram Trigger').item.json.message?.from?.id    || $json.chat_id ) }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -176,
+        784
+      ],
+      "id": "b2cbc209-4c06-4b11-9d87-6bd12134b2f7",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "meetingbot",
+          "mode": "list",
+          "cachedResultName": "meetingbot"
+        },
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        752
+      ],
+      "id": "2ae239a8-621f-4f55-b665-a57f0afe03f0",
+      "name": "Pine meeting Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "UX0T1NNkrlmP6YTo",
+          "name": "pinemeetingbot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: Telegram Trigger item\nconst userText = $input.first().json.message?.text.trim().toLowerCase();\n\n// List of irrelevant inputs (can be expanded as needed)\nconst irrelevantInputs = [\"hello\", \"hi\", \"hey\", \"thanks\", \"okay\", \"help\", \"test\"];\n\n// Check if the input is irrelevant\nconst isIrrelevant = irrelevantInputs.some(input => userText.includes(input));\n\nif (isIrrelevant) {\n  // Set flag for irrelevant input\n  return {\n    json: {\n      irrelevant: true,\n      message: \"Sorry! I can't find relevant information from the knowledge base.\"\n    }\n  };\n}\n\n// If relevant, pass the message to the next step\nreturn {\n  json: {\n    irrelevant: false,\n    message: userText // Pass the original message for processing\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -736,
+        416
+      ],
+      "id": "c59f17b6-c9aa-4f0e-982c-ce2da1be7fcd",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "07a8b1be-5f7e-4835-8b6a-863e4373d83a",
+              "leftValue": "={{ $json.irrelevant }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -528,
+        288
+      ],
+      "id": "8d38a0fa-219d-4eec-b6e7-003f9f71b2dd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Sorry! I Can't find the relevant information from the knowledge base.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -192,
+        192
+      ],
+      "id": "ae3be197-f5fa-462a-b059-d0b64c57ec1b",
+      "name": "True Path",
+      "webhookId": "133b72c2-e14b-4cbc-9416-926f7149123a",
+      "credentials": {
+        "telegramApi": {
+          "id": "Bf9wwZ5hyiBg6NWN",
+          "name": "Telegram Meeting bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files From API manual": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Bot": {
+      "main": [
+        [
+          {
+            "node": "Files From API manual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pine meeting Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pine meeting Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "True Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae4b33e0-8bd4-4b6a-8d09-1e35f75a3c11",
+  "meta": {
+    "instanceId": "65397da1724e8bc6b1c03e7622f76a50f708f7f7b8e3993c5add29845b20f434"
+  },
+  "id": "PRQNHP8aMu3T8Zld",
+  "tags": []
+}

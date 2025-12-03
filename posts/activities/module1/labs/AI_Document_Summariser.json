@@ -1,0 +1,243 @@
+{
+  "name": "AI Document Summariser",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ $json.id }}"
+      },
+      "id": "bdfcef96-a3d4-46a1-b8c2-5b8db56df079",
+      "name": "Google Docs",
+      "type": "n8n-nodes-base.googleDocs",
+      "position": [
+        100,
+        300
+      ],
+      "typeVersion": 2,
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "c0fV6VoCm2onQe5Z",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1vmL4EE3eABcbsem_cG6yXjFUvU29d1_KA7OQb16hcEQ",
+          "mode": "list",
+          "cachedResultName": "Documents Demo",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vmL4EE3eABcbsem_cG6yXjFUvU29d1_KA7OQb16hcEQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1vmL4EE3eABcbsem_cG6yXjFUvU29d1_KA7OQb16hcEQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $('Google Drive ').item.json.name }}",
+            "Summary": "={{ $json.message.content }}",
+            "Date Added": "={{ $now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date Added",
+              "displayName": "Date Added",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "1fd85b4b-9a9a-4c6a-926a-b8200206a449",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        920,
+        360
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "f7n655IcQJu4isLv",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1FUEIaEJexm-XbtLajtaTIEW3P2XNiHe3",
+          "mode": "list",
+          "cachedResultName": "n8n testing",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1FUEIaEJexm-XbtLajtaTIEW3P2XNiHe3"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "4cd85f0f-4990-4a08-a516-4d688d9688d1",
+      "name": "Google Drive ",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -200,
+        340
+      ],
+      "notesInFlow": true,
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "kkS3NlMoYYb0qAIL",
+          "name": "Google Drive account 3"
+        }
+      },
+      "notes": "Received the doc"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Summarise the below content\n {{ $json.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c268f2c-4c1c-4a21-88bd-89dbd8435c5e",
+      "name": "Generate Summary AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [
+        460,
+        300
+      ],
+      "typeVersion": 1.7,
+      "credentials": {
+        "openAiApi": {
+          "id": "QivR7SxB24l8KozV",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        400,
+        540
+      ],
+      "id": "6b6d1a1d-bfe5-4521-85f1-871086cf0f2a",
+      "name": "Wikipedia"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Docs": {
+      "main": [
+        [
+          {
+            "node": "Generate Summary AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive ": {
+      "main": [
+        [
+          {
+            "node": "Google Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Summary AI": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "Generate Summary AI",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fdb8a64a-a30d-4280-af78-410ca4da0c7f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f96a7e8659163312cbaf16ad76688747ea79fa6bf8e4ec720c14444abdf2c12c"
+  },
+  "id": "zYZUWk2XUXT9gLKY",
+  "tags": []
+}

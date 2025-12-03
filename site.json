@@ -1,0 +1,24 @@
+{
+  "title": "Henry Ebomah",
+  "subtitle": "Senior AI engineer at Accenture & tech guy with an entrepreneurial spirit and knack for getting things done",
+  "owner": {
+    "name": "Henry Ebomah",
+    "email": "henryebomah@gmail.com"
+  },
+  "social": {
+    "github": "awesomething",
+    "kaggle": "awesomething",
+    "linkedin": "henryebomah"
+  },
+  "seo": {
+    "title": "Henry Ebomah",
+    "description": "Blog of an AI Engineer",
+    "author": "Henry Ebomah",
+    "keywords": [
+      "blog",
+      "developer blog",
+      "ai engineering blog"
+    ]
+  },
+  "cname": "henryebomah.vercel.app"
+}

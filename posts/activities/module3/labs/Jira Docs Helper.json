@@ -1,0 +1,560 @@
+{
+  "name": "Jira Docs Helper",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "jirabot",
+          "mode": "list",
+          "cachedResultName": "jirabot"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        0
+      ],
+      "id": "72095f62-9c79-4516-a43c-dda5e54e5882",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "9i2TOBw3rqKTZ35o",
+          "name": "Pinejirabot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        208
+      ],
+      "id": "ffe84bb8-cad2-49d4-bebe-d287853af833",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        208
+      ],
+      "id": "a837b678-dff7-4c9a-8fe1-294ce81e9b33",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        400
+      ],
+      "id": "c8f1a14d-b56f-43f9-a19d-ce745202d375",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        528,
+        0
+      ],
+      "id": "c38be897-4f2a-4f9d-8bd2-11ba8147407b",
+      "name": "Download",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "0vdpAkZROuuvbd6c",
+          "name": "Google Drive API Manual Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1VVK7kRHUHe-txB6SSyTJFpmlZGEqgEfN",
+          "mode": "list",
+          "cachedResultName": "Jira Docs Helper",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1VVK7kRHUHe-txB6SSyTJFpmlZGEqgEfN"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0658938a-b494-4513-a8d2-1aa40e327600",
+      "name": "Trigger Bot",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ErVK1obM8b3HukU4",
+          "name": "Google Drive jirabot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": ".pdf",
+        "limit": 75,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1VVK7kRHUHe-txB6SSyTJFpmlZGEqgEfN",
+            "mode": "list",
+            "cachedResultName": "Jira Docs Helper",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1VVK7kRHUHe-txB6SSyTJFpmlZGEqgEfN"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        240,
+        0
+      ],
+      "id": "ab1ff5c4-2e1f-4af5-9682-bc2217ed3588",
+      "name": "Files From resume finder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "ErVK1obM8b3HukU4",
+          "name": "Google Drive jirabot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        960
+      ],
+      "id": "d2b929e8-bfb0-4ff3-bb75-9baf9c36a446",
+      "name": "Telegram Trigger",
+      "webhookId": "60759d26-e0db-476a-9992-d46ab029b961",
+      "credentials": {
+        "telegramApi": {
+          "id": "4HtZU7lGTtmjLWTg",
+          "name": "Telegram jira Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a Jira assistant. Answer ONLY using the supplied knowledge base/snippets.\nIf the knowledge base does not contain the answer, say exactly:\n\"Sorry! I can't find relevant information from the knowledge base.\"\nRespond concisely (4–6 lines). No greetings, no small talk, no explanations of your rules.\nUser query:{{$json.userText}}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        656,
+        848
+      ],
+      "id": "d49dbbea-26ac-4dcb-ba32-5886b47830ed",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        848
+      ],
+      "id": "5332eada-84f7-4052-97cf-b746ab4a25e1",
+      "name": "Send a text message",
+      "webhookId": "133b72c2-e14b-4cbc-9416-926f7149123a",
+      "credentials": {
+        "telegramApi": {
+          "id": "4HtZU7lGTtmjLWTg",
+          "name": "Telegram jira Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        1280
+      ],
+      "id": "9126ed81-1526-42f3-a7da-11b14d958514",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        560,
+        1072
+      ],
+      "id": "129e31a1-ac09-45de-8ce4-e6343e289549",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GrUMbAb2f7mlYuyN",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "{{ String(   $('Telegram Trigger').item.json.message?.chat?.id    || $('Telegram Trigger').item.json.message?.from?.id    || $json.chat_id ) }}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        688,
+        1104
+      ],
+      "id": "8e89f5fd-666e-4b06-81be-54b40825b956",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "={{ $('Telegram Trigger').item.json.message.text }}",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "jirabot",
+          "mode": "list",
+          "cachedResultName": "jirabot"
+        },
+        "includeDocumentMetadata": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        832,
+        1072
+      ],
+      "id": "0029033c-a9bd-4caa-ad6c-ad3357e73e74",
+      "name": "Pine meeting Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "9i2TOBw3rqKTZ35o",
+          "name": "Pinejirabot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input: Telegram Trigger item\nconst userText = $input.first().json.message?.text.trim().toLowerCase();\n\n// List of irrelevant inputs (can be expanded as needed)\nconst irrelevantInputs = [\"hello\", \"hi\", \"hey\", \"thanks\", \"okay\", \"help\", \"test\"];\n\n// Check if the input is irrelevant\nconst isIrrelevant = irrelevantInputs.some(input => userText.includes(input));\n\nif (isIrrelevant) {\n  // Set flag for irrelevant input\n  return {\n    json: {\n      irrelevant: true,\n      message: \"Sorry! I can't find relevant information from the knowledge base.\"\n    }\n  };\n}\n\n// If relevant, pass the message to the next step\nreturn {\n  json: {\n    irrelevant: false,\n    message: userText // Pass the original message for processing\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        736
+      ],
+      "id": "3a087b60-5236-4cbc-9c9f-fb0c1349609d",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "07a8b1be-5f7e-4835-8b6a-863e4373d83a",
+              "leftValue": "={{ $json.irrelevant }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        608
+      ],
+      "id": "203ed885-d792-4149-8621-87321a8e2a11",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Sorry! I Can't find the relevant information from the knowledge base.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        672,
+        512
+      ],
+      "id": "c57fb81e-c3a3-4512-9250-91779e4e3f8e",
+      "name": "True Path",
+      "webhookId": "133b72c2-e14b-4cbc-9416-926f7149123a",
+      "credentials": {
+        "telegramApi": {
+          "id": "4HtZU7lGTtmjLWTg",
+          "name": "Telegram jira Bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Bot": {
+      "main": [
+        [
+          {
+            "node": "Files From resume finder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files From resume finder": {
+      "main": [
+        [
+          {
+            "node": "Download",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pine meeting Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pine meeting Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "True Path",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "92cb1532-d085-4dfe-bbe7-9a6b96461bdd",
+  "meta": {
+    "instanceId": "65397da1724e8bc6b1c03e7622f76a50f708f7f7b8e3993c5add29845b20f434"
+  },
+  "id": "b87Bhd9BtNGdpJIi",
+  "tags": []
+}
