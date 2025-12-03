@@ -23,7 +23,6 @@ You have something to add or improve about our list? Do it via pull request.
 This list is made by the team behind [e2b](https://github.com/e2b-dev/e2b). E2b is building AWS for AI agents. We help developers to deploy, test, and monitor AI agents. E2b is agnostic to your tech stack and aims to work with any tooling for building AI agents.
 
 
-# :open_hands: Open-source projects
 
 ## [AgentGPT](https://agentgpt.reworkd.ai/)
 A browser-based implementation of AutoGPT, accessible via a no-code platform

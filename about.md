@@ -1,5 +1,5 @@
 <p class="about__head">
-    Senior Software Engineer at <a href="https://accenture.com" target="_blank">tradeling</a>. Tech guy with an
+    Senior Software Engineer at <a href="https://accenture.com" target="_blank">accenture</a>. Tech guy with an
     entrepreneurial spirit and knack for getting things done. Currently building <a href="https://videobook.ai">videobook.ai</a>.
 </p>
 
