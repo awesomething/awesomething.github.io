@@ -1,3 +1,8 @@
+---
+title: Collection of Interview/Programming Resources
+date: 2025-12-02
+---
+
 # Collection of Interview/Programming Resources
 
 ## Web apps

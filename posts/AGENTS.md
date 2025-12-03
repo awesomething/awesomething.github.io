@@ -1,3 +1,8 @@
+---
+title: Awesome AI Agents
+date: 2025-12-02
+---
+
 # 🔮 Awesome AI Agents
 [![Discord](https://img.shields.io/static/v1?label=Join&message=%20discord!&color=mediumslateblue)](https://discord.gg/BRymvqUS)
 </a>  <a href="https://twitter.com/e2b_dev" target="_blank">

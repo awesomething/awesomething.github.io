@@ -1,3 +1,8 @@
+---
+title: n8n Local Setup with systemd (Ubuntu 22+)
+date: 2025-12-02
+---
+
 # n8n Local Setup with systemd (Ubuntu 22+)
 
 This guide helps you install n8n on a bare-metal Ubuntu 22+ system using systemd and local disk.

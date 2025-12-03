@@ -1,3 +1,8 @@
+---
+title: Install n8n docker on Ubuntu Server
+date: 2025-12-02
+---
+
 # Install n8n docker on Ubuntu Server!
 ## Step 1: Update Your Server
 ```bash
