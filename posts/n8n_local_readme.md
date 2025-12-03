@@ -1,6 +1,6 @@
 ---
 title: n8n Local Setup with systemd (Ubuntu 22+)
-date: 2025-12-02
+date: 2025-05-22
 ---
 
 # n8n Local Setup with systemd (Ubuntu 22+)

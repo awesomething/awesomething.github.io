@@ -1,6 +1,6 @@
 ---
 title: Install n8n docker on Ubuntu Server
-date: 2025-12-02
+date: 2025-03-11
 ---
 
 # Install n8n docker on Ubuntu Server!
