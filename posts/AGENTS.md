@@ -22,10 +22,6 @@ You have something to add or improve about our list? Do it via pull request.
 ## Who's behind this?
 This list is made by the team behind [e2b](https://github.com/e2b-dev/e2b). E2b is building AWS for AI agents. We help developers to deploy, test, and monitor AI agents. E2b is agnostic to your tech stack and aims to work with any tooling for building AI agents.
 
-## Join the community
-- Follow us on [Twitter](https://twitter.com/e2b_dev)
-
-
 
 # :open_hands: Open-source projects
 
