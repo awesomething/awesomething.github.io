@@ -1,6 +1,6 @@
 ---
-title: Cover Letter - OpenAI
-date: 1970-12-02
+title: Cover Letter
+date: 2015-11-20
 hidden: true
 ---
 
