@@ -19,7 +19,7 @@ I've integrated OpenAI's Agents SDK (tool calling, guardrails, streaming), built
 
 Beyond enterprise work for the Government, I've co-founded an AI agent startup, trained foundation voice models, and authored research paper on safety modules in text-to-video synthesis through Stanford's AI program. These experiences taught me to ship fast in ambiguous environments while keeping users and their data safe.
 
-What excites me about this role: the rare chance to own features end-to-end, work directly with customers, and build capabilities that bring OpenAI's technology to environments that safeguard national and public interests. Ambiguous, cross-functional, mission-critical—that's where I do my best work.
+What excites me about this role: the rare chance to own features end-to-end, work directly with customers, and build capabilities that bring OpenAI's technology to environments that safeguard national and public interests. Ambiguous, cross-functional, mission critical, that's where I do my best work.
 
 I'd welcome the chance to discuss how I can contribute to OpenAI's public sector mission.
 
