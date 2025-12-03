@@ -4,9 +4,9 @@ date: 1970-01-01
 hidden: true
 ---
 
-The Hiring Team,
-OpenAI Headquarters,
-3180 18th Street,
+The Hiring Team,<br>
+OpenAI Headquarters,<br>
+3180 18th Street,<br>
 San Francisco, CA 94110
 
 Dear OpenAI Hiring Team,
