@@ -1,6 +1,6 @@
 <p class="about__head">
     Senior Software Engineer at <a href="https://accenture.com" target="_blank">accenture</a>. Tech guy with an
-    entrepreneurial spirit and knack for getting things done. Currently building <a href="https://videobook.ai">videobook.ai</a>.
+    entrepreneurial spirit and knack for getting things done. Currently building <a href="https://videobook.ai">videobook.ai</a>. Chat with my <a href="https://henryebomah.vercel.app" target="_blank">AI Personal Assistant.</a>
 </p>
 
 I'm an seasoned software engineer with a versatile history of working on large scale enterprise solutions from frontend to fullstack to AI/ML development. Additionally, I have a strong penchant to build and lead small development teams using my strong problem-solving skills.
