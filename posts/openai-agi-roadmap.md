@@ -1,6 +1,6 @@
 ---
 title: The AGI race
-date: 2025-12-11
+date: 2025-12-10
 ---
 
 # OpenAI's Rapid March Toward AGI: How We're Quietly Rehearsing the Future of Intelligence
