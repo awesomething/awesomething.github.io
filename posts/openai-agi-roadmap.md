@@ -3,7 +3,7 @@ title: The AGI race
 date: 2025-12-10
 ---
 
-# OpenAI's Rapid March Toward AGI: How We're Quietly Rehearsing the Future of Intelligence
+# OpenAI's Rapid March Toward AGI: Quietly Rehearsing the Future of Intelligence
 
 *What happens when software can reason, learn, and adapt across almost any task you throw at it? That's the world Artificial General Intelligence (AGI) hints at and OpenAI is actively building toward it.*
 
