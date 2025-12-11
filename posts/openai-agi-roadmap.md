@@ -54,13 +54,13 @@ OpenAI hasn't released a literal "step-by-step AGI Gantt chart," but its product
 
 OpenAI's progress comes from a mix of scale, architecture innovation, and better training methods:
 
-The **GPT-3 and GPT-4 era** demonstrated that large-scale language models can perform surprisingly well on reasoning, coding, and knowledge-intensive tasks. **GPT-5**, released in August 2025, marked a major leap—achieving state-of-the-art performance on math (94.6% on AIME 2025), real-world coding (74.9% on SWE-bench Verified), and multimodal understanding, while reducing hallucination rates by 45% compared to GPT-4o. ([OpenAI](https://openai.com))
+The **GPT-3 and GPT-4 era** demonstrated that large-scale language models can perform surprisingly well on reasoning, coding, and knowledge-intensive tasks. **GPT-5**, released in August 2025, marked a major leap, achieving state-of-the-art performance on math (94.6% on AIME 2025), real-world coding (74.9% on SWE-bench Verified), and multimodal understanding, while reducing hallucination rates by 45% compared to GPT-4o. ([OpenAI](https://openai.com))
 
 Just three months later, **GPT-5.1** arrived with adaptive reasoning that dynamically adjusts thinking time based on task complexity; running 2-3x faster on simple tasks while maintaining depth on complex ones. The model introduces a "no reasoning" mode for latency-sensitive applications and features a warmer, more conversational tone by default. ([OpenAI](https://openai.com))
 
 For developers, GPT-5.1 Codex variants are optimized for long-running agentic coding tasks, with internal testing showing task completion spanning 24+ hours of autonomous work. ([OpenAI](https://openai.com))
 
-**This trajectory, from narrow capabilities to adaptive reasoning, tool use, and sustained autonomous operation—signals clear movement toward more general, agentic AI.**
+**This trajectory, from narrow capabilities to adaptive reasoning, tool use, and sustained autonomous operation, signals clear movement toward more general, agentic AI.**
 
 These models aren't AGI. But they're building blocks: they reason better, integrate tools, handle long contexts, and increasingly act as general problem-solvers with guardrails.
 
@@ -97,7 +97,7 @@ AGI isn't just a technical project. It's a civilization-scale decision.
 
 ### 3.1 Safety, Misuse, and Control
 
-AGI could supercharge cyberattacks, disinformation, or biological threats. It could design powerful new technologies-good or bad—faster than human teams. It could manipulate individuals and markets at unprecedented scale.
+AGI could supercharge cyberattacks, disinformation, or biological threats. It could design powerful new technologies-good or bad, faster than human teams. It could manipulate individuals and markets at unprecedented scale.
 
 Safety discussions focus on:
 
@@ -172,14 +172,14 @@ Rather than asking "When will AGI arrive?" a more practical question is:
 ### For Everyone
 
 - Treat AI as a power tool, not magic: incredibly capable, but still fallible
-- Invest in skills that AI amplifies rather than replaces—creativity, critical thinking, interpersonal communication
+- Invest in skills that AI amplifies rather than replaces, creativity, critical thinking, interpersonal communication
 - Join the public conversation: who controls AGI, who benefits, and under what rules should not be decided in closed rooms
 
 ---
 
 ## Conclusion: Walking Deliberately Into the AGI Era
 
-OpenAI's path toward AGI is not a single breakthrough. It's a series of increasingly capable models, alignment experiments, and governance experiments—all playing out in public.
+OpenAI's path toward AGI is not a single breakthrough. It's a series of increasingly capable models, alignment experiments, and governance experiments, all playing out in public.
 
 If we do this well, AGI can amplify human creativity, help tackle global challenges from climate to healthcare, and open entirely new forms of collaboration between humans and machines. ([OpenAI](https://openai.com/index/planning-for-agi-and-beyond/))
 
