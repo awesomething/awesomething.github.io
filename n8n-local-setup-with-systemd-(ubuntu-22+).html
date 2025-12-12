@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>n8n Local Setup with systemd (Ubuntu 22+)</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Thu, May 22, 2025">Thu, May 22, 2025</time>
+        <h1 class="mar-b-7">n8n Local Setup with systemd (Ubuntu 22+)</h1>
+    </header>
+    <h1 id="n8nlocalsetupwithsystemdubuntu22">n8n Local Setup with systemd (Ubuntu 22+)</h1>
+<p>This guide helps you install n8n on a bare-metal Ubuntu 22+ system using systemd and local disk.</p>
+<hr />
+<h2 id="installstepsbaremetalsystemd">🏗️ Install Steps (bare metal + systemd)</h2>
+<h3 id="1createn8nuser">1. Create <code>n8n</code> user</h3>
+<pre><code class="bash language-bash">sudo useradd -m -s /bin/bash n8n
+</code></pre>
+<h3 id="2installnodejs20lts">2. Install Node.js 20 LTS</h3>
+<pre><code class="bash language-bash">curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+</code></pre>
+<h3 id="3installn8n">3. Install n8n</h3>
+<pre><code class="bash language-bash">sudo su - n8n
+npm install -g n8n
+exit
+</code></pre>
+<h3 id="4createsystemdservice">4. Create systemd service</h3>
+<pre><code class="bash language-bash">sudo nano /etc/systemd/system/n8n.service
+</code></pre>
+<p>Paste this configuration:</p>
+<pre><code class="ini language-ini">[Unit]
+Description=n8n automation
+After=network.target
+
+[Service]
+Type=simple
+User=n8n
+Environment=GENERIC_TIMEZONE=Asia/Bangkok
+Environment=EXECUTIONS_MODE=regular
+Environment=DB_TYPE=sqlite
+ExecStart=/usr/bin/n8n
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+<blockquote>
+  <p>💡 Change to PostgreSQL later if scaling is needed.</p>
+</blockquote>
+<h3 id="5startenabletheservice">5. Start &amp; enable the service</h3>
+<pre><code class="bash language-bash">sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl enable --now n8n
+</code></pre>
+<h3 id="6accessn8n">6. Access n8n</h3>
+<p>Open your browser at: <a href="http://localhost:5678">http://localhost:5678</a></p>
+<hr />
+<h2 id="diskallocationguide">💾 Disk Allocation Guide</h2>
+<p>This layout assumes 100GB disk for a small to medium n8n setup:</p>
+<p>| Mount Point     | Size       | Notes                                 |
+|------------------|------------|----------------------------------------|
+| <code>/</code>              | 20 GB      | OS + base system                      |
+| <code>/var</code>           | 20–30 GB   | Logs, PostgreSQL database, runtime data |
+| <code>/home/n8n</code>      | 20 GB      | n8n user files, working directory     |
+| <code>/opt/n8n_data</code>  | 20–30 GB   | Optional – backups, uploads, executions |
+| <code>swap</code>           | 2–4 GB     | Only if RAM &lt; 8 GB                    |</p>
+<hr />
+<h2 id="notes">✅ Notes</h2>
+<ul>
+<li>PostgreSQL stores data in <code>/var/lib/postgresql</code> by default.</li>
+<li>You can use <code>/opt/n8n_data</code> for backups, uploaded files, and executions.</li>
+<li>This setup is ideal for non-Docker environments.</li>
+</ul>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2025 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

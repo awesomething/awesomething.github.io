@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Install n8n docker on Ubuntu Server</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, September 11, 2024">Wed, September 11, 2024</time>
+        <h1 class="mar-b-7">Install n8n docker on Ubuntu Server</h1>
+    </header>
+    <h1 id="installn8ndockeronubuntuserver">Install n8n docker on Ubuntu Server!</h1>
+<h2 id="step1updateyourserver">Step 1: Update Your Server</h2>
+<pre><code class="bash language-bash">sudo apt-get update &amp;&amp; sudo apt-get upgrade -y
+</code></pre>
+<ul>
+<li>Set time</li>
+</ul>
+<pre><code class="bash language-bash">sudo timedatectl set-timezone Asia/Bangkok
+timedatectl
+</code></pre>
+<h1 id="reboot">Reboot!</h1>
+<h2 id="step2installandconfigureufwfirewall">Step 2: Install and Configure UFW Firewall</h2>
+<pre><code class="bash language-bash">sudo apt install ufw -y
+sudo ufw allow 22    # SSH
+sudo ufw allow 80    # HTTP
+sudo ufw allow 443   # HTTPS
+sudo ufw enable
+</code></pre>
+<ul>
+<li>Check status
+<code>sudo ufw status verbose</code></li>
+</ul>
+<h2 id="orjustdisableit">Or Just Disable it!</h2>
+<pre><code class="bash language-bash">sudo ufw disable
+</code></pre>
+<h2 id="step3dockerinstallation">Step 3: Docker Installation</h2>
+<ul>
+<li>Setup dependencies and Docker's GPG key:</li>
+</ul>
+<pre><code class="bash language-bash">sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+
+sudo install -m 0755 -d /etc/apt/keyrings
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+| sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+</code></pre>
+<ul>
+<li>Setup dependencies and Docker's GPG key:</li>
+</ul>
+<pre><code class="bash language-bash">echo \
+  "deb [arch=$(dpkg --print-architecture) \
+signed-by=/etc/apt/keyrings/docker.gpg] \
+https://download.docker.com/linux/ubuntu \
+$(. /etc/os-release &amp;&amp; echo $VERSION_CODENAME) stable" \
+| sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+
+sudo apt-get update
+</code></pre>
+<ul>
+<li>Install Docker Engine and compose-plugin:</li>
+</ul>
+<pre><code class="bash language-bash">sudo apt-get install docker-ce docker-ce-cli \
+containerd.io docker-buildx-plugin docker-compose-plugin -y
+</code></pre>
+<ul>
+<li>Check installation:</li>
+</ul>
+<pre><code class="bash language-bash">sudo docker run hello-world
+</code></pre>
+<ul>
+<li><p>Example Output</p></li>
+<li><p><img width="796" height="576" alt="Image" src="https://github.com/user-attachments/assets/c1377aa3-430a-494d-bf9b-ee87dacb909c" /></p></li>
+<li><p>Configure Docker to start on boot with systemd</p></li>
+</ul>
+<pre><code class="bash language-bash">sudo systemctl enable docker.service
+sudo systemctl enable containerd.service
+</code></pre>
+<h2 id="step4installingcaddyforautomatichttps">Step 4: Installing Caddy for Automatic HTTPS</h2>
+<ul>
+<li>Install Caddy:</li>
+</ul>
+<pre><code class="bash language-bash">sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl tcpdump
+
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+| sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+| sudo tee /etc/apt/sources.list.d/caddy-stable.list
+
+sudo apt update
+sudo apt install caddy -y
+</code></pre>
+<ul>
+<li>Edit the Caddyfile configuration file:</li>
+</ul>
+<pre><code class="bash language-bash">sudo mv /etc/caddy/Caddyfile /etc/caddy/Caddyfile.orig
+sudo vi /etc/caddy/Caddyfile
+</code></pre>
+<ul>
+<li>Enter your domain and configure reverse proxy. Replace "yourdomain.com" with your actual domain name:</li>
+</ul>
+<pre><code class="bash language-bash">yourdomain.com {
+    tls internal
+    reverse_proxy localhost:5678
+}
+</code></pre>
+<ul>
+<li>For port 443</li>
+</ul>
+<pre><code class="bash language-bash">10.1.200.20 {
+    tls internal
+    reverse_proxy localhost:5678
+}
+</code></pre>
+<ul>
+<li>If no domain yet, use this temporarily, but need to edit n8n "env" for N8N<em>SECURE</em>COOKIE=false</li>
+</ul>
+<pre><code class="bash language-bash">:80 {
+    reverse_proxy localhost:5678
+}
+</code></pre>
+<ul>
+<li>Restart Caddy</li>
+</ul>
+<pre><code class="bash language-bash">sudo systemctl restart caddy
+</code></pre>
+<h2 id="step5installingcaddyforautomatichttps">Step 5: Installing Caddy for Automatic HTTPS</h2>
+<h3 id="easystart">Easy start</h3>
+<pre><code class="bash language-bash">sudo docker volume create n8n_data
+
+sudo docker run -it --rm --name n8n -p 5678:5678 -v n8n_data:/home/node/.n8n docker.n8n.io/n8nio/n8n
+</code></pre>
+<h3 id="cleanstep">Clean step</h3>
+<pre><code class="bash language-bash">mkdir ~/n8n-docker
+cd ~/n8n-docker
+</code></pre>
+<ul>
+<li>Create <code>docker-compose.yml</code> with the following content:</li>
+</ul>
+<pre><code class="bash language-bash">services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - TZ=Asia/Bangkok
+      - GENERIC_TIMEZONE=Asia/Bangkok
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_SECURE_COOKIE=false
+
+volumes:
+  n8n_data:
+</code></pre>
+<ul>
+<li>Now deploy n8n by running Docker compose:</li>
+</ul>
+<pre><code class="bash language-bash">sudo docker compose up -d
+</code></pre>
+<ul>
+<li>Viewing Log <code>sudo docker logs --tail=50 &lt;container_name&gt;</code></li>
+</ul>
+<pre><code class="bash language-bash">sudo docker logs --tail=50 n8n
+</code></pre>
+<h2 id="step6accessingyourselfhostedn8ninstance">Step 6: Accessing Your Self-Hosted n8n Instance</h2>
+<p>Visit your domain in any web browser. Your n8n instance should now load successfully at https://yourdomain.com. Follow the setup steps in the interface to complete your initial setup.</p>
+<p>https://<my-ip>
+or
+http://<my-ip or localhost>:5678</p>
+<h1 id="updatingyourn8ninstallation">Updating your n8n Installation</h1>
+<pre><code class="bash language-bash">sudo docker compose pull
+sudo docker compose up -d
+</code></pre>
+<h1 id="maintenace">Maintenace</h1>
+<ul>
+<li>Check status <code>sudo docker ps</code></li>
+<li>Shutdown Container <code>sudo docker stop &lt;container_name&gt;</code></li>
+<li>Start Container <code>sudo docker start &lt;container_name&gt;</code></li>
+<li>Restart Container <code>sudo docker restart &lt;container_name&gt;</code></li>
+<li>Viewing Log <code>sudo docker logs --tail=50 &lt;container_name&gt;</code></li>
+<li>Remove container <code>sudo docker rm &lt;container_name&gt;</code></li>
+</ul>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2025 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
