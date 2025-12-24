@@ -330,5 +330,5 @@ If you encounter issues:
 
 ---
 
-**Congratulations!** You're now ready to use the Day 16 AI Candidate Screening workflow. 🎉
+**Congratulations!** You're now ready to use the AI Candidate Screening workflow. 🎉
 
