@@ -3,8 +3,6 @@ title: API Credentials Setup Guide - Candidate Screening Workflow
 date: 2024-11-12
 ---
 
-# API Credentials Setup Guide - Candidate Screening Workflow
-
 This guide walks you through setting up all the API credentials needed for the Day 16 Candidate Screening AI Agent workflow in n8n Cloud.
 
 ## Prerequisites
