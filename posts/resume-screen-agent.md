@@ -3,7 +3,7 @@ title: API Credentials Setup Guide - Candidate Screening Workflow
 date: 2024-11-12
 ---
 
-This guide walks you through setting up all the API credentials needed for the Day 16 Candidate Screening AI Agent workflow in n8n Cloud.
+This guide walks you through setting up all the API credentials needed for the Candidate Screening AI Agent workflow in n8n Cloud.
 
 ## Prerequisites
 
@@ -224,11 +224,11 @@ Before using the workflow, create a Google Sheet with the following columns:
 
 Once all credentials are set up, you need to assign them to the workflow nodes:
 
-### 5.1 Import the Day 16 Workflow
+### 5.1 Import the Candidate Screening Workflow
 
 1. In n8n Cloud, click **+ Add workflow**
 2. Click the **⋮** menu (three dots) → **Import from File**
-3. Upload the `Day 16.json` file
+3. Upload the `Candidate Screening.json` file
 4. The workflow will import with placeholder credentials
 
 ### 5.2 Assign Google Gemini Credentials
