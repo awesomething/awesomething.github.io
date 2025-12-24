@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>A Philosophy of Software Design</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Tue, November 11, 2025">Tue, November 11, 2025</time>
+        <h1 class="mar-b-7">A Philosophy of Software Design</h1>
+    </header>
+    <h1 id="aphilosophyofsoftwaredesign">A Philosophy of Software Design</h1>
+<p>Credit &amp; Author: John Ousterhout</p>
+<!-- TOC -->
+<ul>
+<li><a href="#a-philosophy-of-software-design">A Philosophy of Software Design</a></li>
+<li><a href="#preface">Preface</a></li>
+<li><a href="#chapter-1-introduction">Chapter 1: Introduction</a></li>
+<li><a href="#chapter-2-the-nature-of-complexity">Chapter 2: The Nature of Complexity</a><ul>
+<li><a href="#symtoms-of-complexity">Symtoms of Complexity</a></li>
+<li><a href="#change-amplification">Change Amplification</a></li>
+<li><a href="#cognitive-load">Cognitive Load</a></li>
+<li><a href="#unknown-unknowns">Unknown Unknowns</a></li>
+<li><a href="#causes-of-complexity">Causes of Complexity</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#obsecurity">Obsecurity</a></li>
+<li><a href="#complexity-is-incremental">Complexity is Incremental</a></li></ul></li>
+<li><a href="#chapter-3-working-code-isnt-enough">Chapter 3: Working Code Isn't Enough</a></li>
+<li><a href="#chapter-4-modules-should-be-deep">Chapter 4: Modules Should Be Deep</a><ul>
+<li><a href="#modular-design">Modular Design</a></li>
+<li><a href="#interface">Interface</a></li>
+<li><a href="#abstractions">Abstractions</a></li>
+<li><a href="#deep-modules">Deep Modules</a></li>
+<li><a href="#classitis">Classitis</a></li></ul></li>
+<li><a href="#chapter-5-information-hiding-and-leakage">Chapter 5: Information Hiding (and Leakage)</a><ul>
+<li><a href="#information-hiding">Information Hiding</a></li>
+<li><a href="#information-leakage">Information Leakage</a></li>
+<li><a href="#temporal-decomposition">Temporal Decomposition</a></li>
+<li><a href="#other-topics">Other Topics</a></li></ul></li>
+<li><a href="#chapter-6-general-purpose-modules-are-deeper">Chapter 6: General-Purpose Modules are Deeper</a><ul>
+<li><a href="#questions-to-ask">Questions to Ask</a></li></ul></li>
+<li><a href="#chapter-7-different-layer-different-abstraction">Chapter 7: Different Layer, Different Abstraction</a><ul>
+<li><a href="#pass-through-methods">Pass-through Methods</a></li>
+<li><a href="#when-is-interface-duplication-ok">When is interface duplication OK?</a></li>
+<li><a href="#decorators">Decorators</a></li>
+<li><a href="#interface-versus-implementation">Interface versus Implementation</a></li>
+<li><a href="#pass-through-variables">Pass-through Variables</a></li></ul></li>
+<li><a href="#chapter-8-pull-complexity-downwards">Chapter 8: Pull Complexity Downwards</a><ul>
+<li><a href="#configuration-parameters">Configuration Parameters</a></li>
+<li><a href="#rule-of-thumb">Rule of Thumb</a></li></ul></li>
+<li><a href="#chapter-9-better-together-or-better-apart">Chapter 9: Better Together Or Better Apart?</a><ul>
+<li><a href="#bring-together-simplify-the-interface">Bring Together: Simplify the Interface</a></li>
+<li><a href="#bring-together-eliminate-duplication">Bring Together: Eliminate Duplication</a></li>
+<li><a href="#separate-general-purpose-and-special-purpose-code">Separate General-Purpose and Special-Purpose Code</a></li>
+<li><a href="#splitting-and-joining-methods">Splitting and Joining Methods</a></li></ul></li>
+<li><a href="#chapter-10-define-errors-out-of-existence">Chapter 10: Define Errors Out of Existence</a><ul>
+<li><a href="#why-exceptions-add-complexity">Why exceptions add complexity</a></li>
+<li><a href="#too-many-exceptions">Too many exceptions</a></li>
+<li><a href="#define-errors-out-of-existence">Define errors out of existence</a></li>
+<li><a href="#mask-exceptions">Mask Exceptions</a></li>
+<li><a href="#exception-aggregation">Exception aggregation</a></li>
+<li><a href="#crash-application">Crash Application</a></li>
+<li><a href="#design-special-cases-out-of-existence">Design special cases out of existence</a></li>
+<li><a href="#taking-it-too-far">Taking it too far</a></li></ul></li>
+<li><a href="#chapter-11-design-it-twice">Chapter 11: Design it Twice</a><ul>
+<li><a href="#ego">Ego</a></li></ul></li>
+<li><a href="#chapter-12-why-write-comments-the-four-excuses">Chapter 12: Why Write Comments? The Four Excuses</a><ul>
+<li><a href="#good-code-is-self-documenting">Good code is self-documenting</a></li>
+<li><a href="#i-dont-have-time-to-write-comments">I don't have time to write comments</a></li>
+<li><a href="#comments-get-out-of-date-and-become-misleading">Comments get out of date and become misleading</a></li>
+<li><a href="#benefits-of-well-written-comments">Benefits of well-written comments</a></li></ul></li>
+<li><a href="#chapter-13-comments-should-describe-things-that-arent-obvious-from-the-code">Chapter 13: Comments Should Describe Things that Aren't Obvious from the Code</a><ul>
+<li><a href="#pick-conventions">Pick conventions</a></li>
+<li><a href="#dont-repeat-the-code">Don't repeat the code</a></li>
+<li><a href="#lower-level-comments-add-precision">Lower-level comments add precision</a></li>
+<li><a href="#higher-evel-comments-enchance-intuition">Higher-evel comments enchance intuition</a></li>
+<li><a href="#interface-documentation">Interface documentation</a></li>
+<li><a href="#implementation-comments-what-and-why-not-how">Implementation comments: what and why, not how</a></li>
+<li><a href="#cross-module-design-decisions">Cross-module design decisions</a></li></ul></li>
+<li><a href="#chapter-14-choosing-names">Chapter 14: Choosing Names</a><ul>
+<li><a href="#create-an-image">Create an image</a></li>
+<li><a href="#names-should-be-precise">Names should be precise</a></li>
+<li><a href="#use-names-consistently">Use names consistently</a></li>
+<li><a href="#more-thoughts">More Thoughts</a></li></ul></li>
+<li><a href="#chapter-15-write-the-comments-first">Chapter 15: Write The Comments First</a><ul>
+<li><a href="#delayed-comments-are-bad-comments">Delayed comments are bad comments</a></li>
+<li><a href="#write-the-comments-first">Write the comments first</a></li></ul></li>
+<li><a href="#chapter-16-modifying-existing-code">Chapter 16: Modifying Existing Code</a><ul>
+<li><a href="#stay-straetgic">Stay Straetgic</a></li>
+<li><a href="#maintaining-comments-keep-the-comments-near-the-code">Maintaining comments: keep the comments near the code</a></li>
+<li><a href="#comments-belong-in-the-code-not-the-commit-log">Comments belong in the code, not the commit log</a></li>
+<li><a href="#maintaining-comments-avoid-duplication">Maintaining comments: avoid duplication</a></li>
+<li><a href="#maintaining-comments-check-the-diffs">Maintaining comments: check the diffs</a></li>
+<li><a href="#higher-level-comments-are-easier-to-maintain">Higher-level comments are easier to maintain</a></li></ul></li>
+<li><a href="#chapter-17-consistency">Chapter 17: Consistency</a><ul>
+<li><a href="#ensuring-consistency">Ensuring Consistency</a></li></ul></li>
+<li><a href="#chapter-18-code-should-be-obvious">Chapter 18: Code Should be Obvious</a><ul>
+<li><a href="#things-that-make-code-more-obvious">Things that make code more obvious</a></li>
+<li><a href="#things-that-make-code-less-obvious">Things that make code less obvious</a></li></ul></li>
+<li><a href="#chapter-19-software-trends">Chapter 19: Software Trends</a><ul>
+<li><a href="#object-oriented-programming-and-inheritance">Object-oriented programming and inheritance</a></li>
+<li><a href="#agile-development">Agile Development</a></li>
+<li><a href="#unit-tests">Unit Tests</a></li>
+<li><a href="#test-driven-development">Test-driven Development</a></li>
+<li><a href="#design-pattern">Design Pattern</a></li></ul></li>
+<li><a href="#chapter-20-designing-for-performance">Chapter 20: Designing for Performance</a></li>
+</ul>
+<!-- /TOC -->
+<h2 id="">---</h2>
+<h2 id="preface">Preface</h2>
+<ul>
+<li>The most fundamental problem in computer science is problem decomposition: how to take a complex problem and divide it up into pieces that can be solved independently</li>
+<li>Overall goal is to reduce complexity; this is more important than any particular principle or idea you read here</li>
+</ul>
+<hr />
+<h2 id="chapter1introduction">Chapter 1: Introduction</h2>
+<ul>
+<li>Writing computer software is one of the purest creative activities in the history of the human race</li>
+<li>All programming requires is a creative mind and the ability to organize your thoughts. If you can visaulize a system, you can probably implement it in a computer program</li>
+<li>If we want to make it easier to write software, we msut find ways to make software simplier</li>
+</ul>
+<p>Eliminating Complexity</p>
+<ol>
+<li>Make code simpler and more obvious</li>
+<li>Encapsulate complexity so that the programmer can work on a system without being exposed to all of its complexity at once (modular design)</li>
+</ol>
+<ul>
+<li><p>Software design is a continuous process that spans the entire lifecycle of a software system</p></li>
+<li><p>Waterfall model - divide project into discrete phases that need to be complete before starting the next phase</p></li>
+<li><p>Agile model - iterate your design so that each iteration exposes problems with the exiting design, which are fixed before the enxt set of features is designed</p></li>
+<li><p>Incremental development also means continuous redesign</p></li>
+<li><p>Initial design is never the best one</p></li>
+<li><p>Always look for opportunities to ipmrove the design of the system youa re working on</p></li>
+</ul>
+<blockquote>
+  <p>Beautiful design reflects a balance between competing ideas and approaches</p>
+</blockquote>
+<hr />
+<h2 id="chapter2thenatureofcomplexity">Chapter 2: The Nature of Complexity</h2>
+<ul>
+<li>The ability to reocgnize complexity is a crucial design skill. It allows you to identify problems before you invest a lot of effort in them, and it allows you to make good chocies among alternatives</li>
+<li>Complexity is anything related to the structure of a software system that makes it hard to understand and modify the system</li>
+<li>Complexity is more apparent to readers than writers</li>
+<li>ask other people why they think your code is complex</li>
+</ul>
+<blockquote>
+  <p>Your job as a developer is not just to create code that you can work with easily, but to create code that others can also work with easily</p>
+</blockquote>
+<h3 id="symtomsofcomplexity">Symtoms of Complexity</h3>
+<blockquote>
+  <p>One of the most important goals of good design is for a system to be obvious. In an obvious system, a developer can quickly understand how the existing code works and what is required to make a change</p>
+</blockquote>
+<h4 id="changeamplification">Change Amplification</h4>
+<ul>
+<li>simple change requires code modifications in many different places</li>
+</ul>
+<h4 id="cognitiveload">Cognitive Load</h4>
+<ul>
+<li>how much a developer needs to know in order to complete a task</li>
+</ul>
+<blockquote>
+  <p>Sometimes an approach that requires more lines of code is actually simpler because it reduces cognitive load</p>
+</blockquote>
+<h4 id="unknownunknowns">Unknown Unknowns</h4>
+<ul>
+<li>it is not obvious which pieces of code must be modified to complete a task, or what information a developer must have to carry out the task successfully</li>
+</ul>
+<blockquote>
+  <p>With unknown unknowns, it is unclear what to do or whether a proposed solution will will work</p>
+</blockquote>
+<h3 id="causesofcomplexity">Causes of Complexity</h3>
+<h4 id="dependencies">Dependencies</h4>
+<ul>
+<li>exists when a given piece of code cannot be understood and modified in isolation</li>
+<li>fundamental part of software and cannot be completely eliminated; we purposely introduce dependencies as part of the software design process</li>
+<li>leads to change applification and high cognitive load</li>
+</ul>
+<h4 id="obsecurity">Obsecurity</h4>
+<ul>
+<li>important information is not obvious</li>
+<li>creates unknown unknowns and contributes to high congnitive load</li>
+</ul>
+<h3 id="complexityisincremental">Complexity is Incremental</h3>
+<ul>
+<li>complexity isn't caused by a single catastrophic error, it accumulates in lots of small chunks</li>
+<li>incremental nature of complexity makes it hard to control</li>
+</ul>
+<blockquote>
+  <p>It's easy to convince yourself that a little bit of complexity introcued by your current change is no big deal. However, if every developer takes this approach for every change, complexity accumulates rapidly</p>
+</blockquote>
+<hr />
+<h2 id="chapter3workingcodeisntenough">Chapter 3: Working Code Isn't Enough</h2>
+<blockquote>
+  <p>Many organizations encourage a tactical mindset, focused on getting features working as quickly as possible. However if you want a good design, you must take a more strategic approach when you invest time to produce clean designs and fix problems</p>
+</blockquote>
+<ul>
+<li>tactical programming is short-sighted as you are rushing to get work done</li>
+<li>most import thing is the long-term structure of the system</li>
+<li>strategic programming requires an investment mindset</li>
+<li>invest time to improve the design of the system</li>
+<li>it's worth taking a little extra time to find a simple design for each new class; rather than implementing the first idea that comes to mind, try a couple of alternative designs and pick the cleanest one</li>
+<li>make lots of small investments on a continual basis, adding up to about 10-20% of your total development time</li>
+<li>best way to lower development costs is to hire great engineers</li>
+<li>they are much more productive than medicore engineers</li>
+<li>if your code base is a wreck, word will get out and this will make it harder to recruit</li>
+<li>it's a lot more fun to work in a company that cares about software design and has a clean code base</li>
+</ul>
+<hr />
+<h2 id="chapter4modulesshouldbedeep">Chapter 4: Modules Should Be Deep</h2>
+<blockquote>
+  <p>Design systems so that developers only need to face a small fraction of the overall compelxity at any given time</p>
+</blockquote>
+<h3 id="modulardesign">Modular Design</h3>
+<ul>
+<li>decomposing a software system into a collection of modules that are relatively independent</li>
+<li>modules must work together by calling each other's functions or methods, which results in modules having to know something about each other</li>
+<li>goal of modular design is to minimize the dependencies between modules</li>
+<li>module has two parts:</li>
+</ul>
+<ol>
+<li><strong>interface</strong> consists of everything that a developer working in a different module must know in order to use the given module</li>
+<li><strong>implementation</strong> consists of code that carries out the promises made by the interface</li>
+</ol>
+<ul>
+<li>best modules are those whose interfaces are much simplier than their implementation</li>
+<li>simple interface minimizes complexity that a module imposes on the rest of the system</li>
+<li>modifying a module without changing its interface means no other module is affected by the change</li>
+</ul>
+<h3 id="interface">Interface</h3>
+<ul>
+<li>consists of two kinds of imformation: formal and informal</li>
+<li>formal parts of an interface are specified explicitly in the code</li>
+<li>informal parts are not specified in a way that can be understood or enforced by the programming language; these can only be described in the comments</li>
+<li>clearly specified interfaces indicate exactly what developers need to know in order to use the associated module</li>
+</ul>
+<h3 id="abstractions">Abstractions</h3>
+<ul>
+<li>simplified view of an entity, which omits important details</li>
+<li>in modular programming, each module provides an abstraction in form of its interface</li>
+<li>can go wrong in two ways:</li>
+<li>include details that are not really important, making the abstraction more complicated than necessary</li>
+<li>omit important details which results in obscurity</li>
+</ul>
+<h3 id="deepmodules">Deep Modules</h3>
+<blockquote>
+  <p>The best modules are deep: they have a lot of functionality behind a smiple interface</p>
+</blockquote>
+<ul>
+<li>think about depth as cost vs benefit; cost is interface, benefit is functionality</li>
+</ul>
+<h3 id="classitis">Classitis</h3>
+<ul>
+<li>conventional wisdom says that classes should be small, not deep</li>
+<li>results in classes that are individually simple, but produce tremendous complexity from the accumulated interfaces</li>
+<li>if an interface has many features, most developers will only be aware of a few of them</li>
+</ul>
+<hr />
+<h2 id="chapter5informationhidingandleakage">Chapter 5: Information Hiding (and Leakage)</h2>
+<blockquote>
+  <p>Technique for achieving deep modules where the implementation is hidden and not exposed in the interface</p>
+</blockquote>
+<h3 id="informationhiding">Information Hiding</h3>
+<ul>
+<li>information hiding reduces complexity in two ways:</li>
+</ul>
+<ol>
+<li>Simplier interface to a module reduces cognitive load</li>
+<li>Easier to evolve system as design change related to information will only affect one module</li>
+</ol>
+<ul>
+<li>always think about the information hidden in a module</li>
+<li><code>private</code> declarations are not hiding anything</li>
+<li>partial information hiding can also have value</li>
+</ul>
+<h3 id="informationleakage">Information Leakage</h3>
+<blockquote>
+  <p>Same knowledge used in multiple places</p>
+</blockquote>
+<ul>
+<li>occurs when a design decision is reflected in multiple modules</li>
+<li>creates dependencies where changes require touching many different modules</li>
+<li>information can be leaked even if it's not in the interface</li>
+<li>two functions expect the same file format</li>
+<li>if classes are small and closely tied to leak information, merge into single class</li>
+<li>pull shared information out of all affected classes and encapsulate in a new class</li>
+</ul>
+<h3 id="temporaldecomposition">Temporal Decomposition</h3>
+<ul>
+<li>structure of system corresponds to the time order in which operations will occur</li>
+<li>when designing modules focus on the knowledge that's needed to perform each task, not the order in which tasks occur</li>
+</ul>
+<h3 id="othertopics">Other Topics</h3>
+<ul>
+<li>interfaces should be designed to make the common case as simple as possible</li>
+<li>best featuers are ones you get without even knowing they exist</li>
+<li>design private methods within a class so that each method encapsulates some information or capability and hides it from the rest of the class</li>
+<li>don't hiding information that is needed outside the module</li>
+<li>goal is to minimize the amount of information that is needed outside of a module</li>
+<li>recognize what is required and make sure it is exposed</li>
+</ul>
+<hr />
+<h2 id="chapter6generalpurposemodulesaredeeper">Chapter 6: General-Purpose Modules are Deeper</h2>
+<ul>
+<li>generalize-purpose solution might include facilities that are never actually needed</li>
+<li>special-purpose approach is consistent with an incremental approach to software development</li>
+<li>general-purpose approach results in simpler and deeper interfaces than special-purpose approach</li>
+<li>general-purpose interfaces reduce cognitive load</li>
+</ul>
+<h3 id="questionstoask">Questions to Ask</h3>
+<ol>
+<li>What is the simplierst interface that will cover all my current needs?</li>
+</ol>
+<ul>
+<li>reducing number of methods in an API without reducing its overall capabilities makes it more general. Make sure you are not increasing number of method arguments</li>
+</ul>
+<ol>
+<li>In how many situations will this method be used?</li>
+</ol>
+<ul>
+<li>can you replace several special-purpose methods with a single general-purpose method</li>
+</ul>
+<ol>
+<li>Is this API easy to use for my current needs?</li>
+</ol>
+<ul>
+<li>if you have to write a lot of additional code to use a class for your current purpose, it probably doesn't have the right functionality</li>
+</ul>
+<hr />
+<h2 id="chapter7differentlayerdifferentabstraction">Chapter 7: Different Layer, Different Abstraction</h2>
+<blockquote>
+  <p>Software systems are composed in layers, where higher layers use the facilities provided by lower layers. In a well-designed system, each layer provides a different abstraction from the layers above and below it. If adjacent layers have similar abstractions, we signals that we could have a problem with class decomposition</p>
+</blockquote>
+<h3 id="passthroughmethods">Pass-through Methods</h3>
+<ul>
+<li>method that does little except invoke another method, whose signature is similar or identical to that of the calling method</li>
+<li>make classes shallower: increase interface complexity, but do not increase total functionality</li>
+<li>create dependencies between classes</li>
+<li>indicate confusion over the division of responsiblities</li>
+<li>How to eliminate pass-thru methods:</li>
+</ul>
+<ol>
+<li>Expose lower level class directly to the callers of the higher level class</li>
+<li>Remove all responsibility for feature from higher level class</li>
+<li>Redistribute functionality between classes</li>
+<li>If classes can't be disentangled, merge them</li>
+</ol>
+<h3 id="whenisinterfaceduplicationok">When is interface duplication OK?</h3>
+<ul>
+<li>each new method should contribute significant functionality</li>
+<li>dispatcher method that uses arguments to figure out which method to invoke</li>
+<li>when several methods provide different implemtnations of the same interface, it reduces cognitive load</li>
+</ul>
+<h3 id="decorators">Decorators</h3>
+<blockquote>
+  <p>take an existing object and extend its functionality by providing an API similar to the underlying object</p>
+</blockquote>
+<ul>
+<li>create a special-purpose extension of a class from a more generic core</li>
+<li>decorators classes tend to be shallow</li>
+<li>before creating a decorator, ask:</li>
+<li>Can we add the new functionality directly to the underlying class?</li>
+<li>If the new functionality is specialized, would it make sense to merge it with the use case?</li>
+<li>Could the functionality be merged with an existing decorator?</li>
+<li>Does new functionality need to wrap existing functionality?</li>
+</ul>
+<h3 id="interfaceversusimplementation">Interface versus Implementation</h3>
+<blockquote>
+  <p>The interface of a class should normally be different from its implementation: the representations used internally should be different from the abstractions that appear in the interface</p>
+</blockquote>
+<h3 id="passthroughvariables">Pass-through Variables</h3>
+<ul>
+<li>variable that is passed down thru a long chain of methods</li>
+<li>adds complexity because all intermediate methods must be aware of existence</li>
+<li>How to eliminate pass-through variables:</li>
+</ul>
+<ol>
+<li>Is there an object shared between the topmost and bottommost methods?</li>
+<li>Store information in a global variable, but has its own problems</li>
+<li>Context object that stores application's global state<ul>
+<li>allows multiple instances of the system to coexist in a single process, each with its own context</li>
+<li>context will be needed many places so try to save it in system's major objects (include in constructors)</li>
+<li>makes it easy to identify and manage global state of system</li>
+<li>simplifies testing</li>
+<li>make context variable immutable to make threadsafe</li></ul></li>
+</ol>
+<hr />
+<h2 id="chapter8pullcomplexitydownwards">Chapter 8: Pull Complexity Downwards</h2>
+<blockquote>
+  <p>More important for a module to have a simple interface than a simple implementation</p>
+</blockquote>
+<ul>
+<li>as a module developer, you should strive to make life as easy as possible for the users of your module, even that means extra work fo ryou</li>
+<li>if you solve the easy problems and punt the hard ones to somebody else, you amplify the complexity so that more people have to deal with the problem rather than just you</li>
+</ul>
+<h3 id="configurationparameters">Configuration Parameters</h3>
+<ul>
+<li>rather than determining a particular behavior internally, a class can pull in a few parameters that control its behavior</li>
+<li>ask yourself if users are better able to find a value than what you can determine by yourself</li>
+<li>if you still need a config value, try to infer sane a sane default</li>
+</ul>
+<h3 id="ruleofthumb">Rule of Thumb</h3>
+<ul>
+<li>Pull down complexity if it:</li>
+</ul>
+<ol>
+<li>is closely related to the class' existing functionality</li>
+<li>will result in many simplifications elsewhere in the applciation</li>
+<li>simplifies the class' interface</li>
+</ol>
+<hr />
+<h2 id="chapter9bettertogetherorbetterapart">Chapter 9: Better Together Or Better Apart?</h2>
+<blockquote>
+  <p>Given two pieces of functionality, should they be implemented together in the same place, or should their implemtnations be separated?</p>
+</blockquote>
+<ul>
+<li>the goal is to reduce complexity of the system as a whole and improve its modularity</li>
+<li>beware of dividing system into large number of smaller components</li>
+<li>more interfaces and every new interface adds complexity</li>
+<li>additional code to manage components</li>
+<li>separation between components might make it hard to be aware of existence</li>
+<li>code duplication</li>
+<li>it is beneficial to bring together pieces of code that are closely related</li>
+<li>indications that two pieces of code are closely related</li>
+<li>share information</li>
+<li>used together</li>
+<li>overlap conceptually (share higher-level category)</li>
+<li>hard to understand one piece of code without looking at other</li>
+</ul>
+<h3 id="bringtogethersimplifytheinterface">Bring Together: Simplify the Interface</h3>
+<ul>
+<li>may be possible to define an interface for the new module that is simpler or easier to use than the origin interfaces.</li>
+<li>may be possible to perform functions automatically so that users are not aware of the difference</li>
+</ul>
+<h3 id="bringtogethereliminateduplication">Bring Together: Eliminate Duplication</h3>
+<ul>
+<li>reorganize code to eliminate reptition</li>
+<li>this is effective if the repeated snippet is long and the replacement method has a simple signature</li>
+<li>another way to eliminate duplication is to refactor so the snippet is only excited in one place (goto aren't always harmful)</li>
+</ul>
+<h3 id="separategeneralpurposeandspecialpurposecode">Separate General-Purpose and Special-Purpose Code</h3>
+<ul>
+<li>if a module contains a mechanism that can be used for several different purposes than it should provide one general-purpose method and allow other modules to contain special-purpose code, as required</li>
+<li>in general, lower layers of system tend to be more general-purpose and upper layers more special-purpose</li>
+<li>separate by pulling special-purpose code upwards into higher layers, leaving the lower layers general-purpose</li>
+</ul>
+<h3 id="splittingandjoiningmethods">Splitting and Joining Methods</h3>
+<blockquote>
+  <p>When designing methods, the most important goal is to provide clean and simple abstractions</p>
+</blockquote>
+<ul>
+<li>length by itself is rarely a good reason for splitting up a method as we now have additional interfaces, which add complexity</li>
+<li>shouldn't break up a method unless it makes the overall system simplier</li>
+<li>if method had complex interactions within its blocks, it's even more important to keep them together</li>
+<li>method should be deep with a clean and simple abstraction</li>
+<li>Split a method if it results in a cleaner abstraction:</li>
+<li>factor out a subtask into a separate method which is invoked by the parent method. Revert if you are jumping back and forth a lot</li>
+<li>split method into two separate methods with interfaces that are simplier than the interface of the original method</li>
+</ul>
+<hr />
+<h2 id="chapter10defineerrorsoutofexistence">Chapter 10: Define Errors Out of Existence</h2>
+<blockquote>
+  <p>Exception handling is one of the worst sources of complexity in software systems</p>
+</blockquote>
+<ul>
+<li><strong>exception</strong> - any uncommon condition that alters the normal flow of control in a program</li>
+</ul>
+<h3 id="whyexceptionsaddcomplexity">Why exceptions add complexity</h3>
+<ul>
+<li>Ways exceptions can add complexity:</li>
+<li>caller may provide bad arguemnts or configuration information</li>
+<li>invoked method may not be able to complete a requested operation</li>
+<li>in distributed systems, network packets may be lost or delayed, servers may not respond in a teimely fashion, or peers may communicate in unexpected ways</li>
+<li>code may detect bugs, internal inconsistencies, or situations it is not prepared to handle</li>
+<li>exception handling can account for a significant fraction of all the code in a system</li>
+<li>exception handling code is inherently more difficult to write than normal-case code</li>
+<li>when an exception occurs, programmer can deal with two ways:</li>
+</ul>
+<ol>
+<li>move forward and complete the work in progress in spite of the exception</li>
+<li>abort the operation in progress and report the exception upwards<ul>
+<li>aborting can result in an inconsistent system state so the exception handling code must restore consistency</li></ul></li>
+</ol>
+<ul>
+<li>handling exceptions can result in more exceptions</li>
+<li>secondary exceptions occuring during recovery are often more subtle and complex than the primary exceptions</li>
+<li>find a way to handle exceptions without introducing more exceptions</li>
+<li>exceptions don't occur very often in running systems, so exception handling code is rarely executed</li>
+<li>write tests to make sure the code functions the way you think it should</li>
+</ul>
+<h3 id="toomanyexceptions">Too many exceptions</h3>
+<ul>
+<li>problems are exacerbated when too many unnecessary exceptions are defined. This results in an over-defensive coding style</li>
+<li>exceptions are a way to punt the problem to the caller</li>
+<li>exceptions are part of your interface, keep them simple</li>
+<li>exceptions also affect multiple layers as they can propogate through several stacks before being caught</li>
+<li>best way to reduce complexity is to reduce the number of places exceptions have to be handled</li>
+</ul>
+<h3 id="defineerrorsoutofexistence">Define errors out of existence</h3>
+<ul>
+<li>define APIs so there are no exceptions to handle and reduce the amount of code that needs to be written to handle errors</li>
+</ul>
+<h3 id="maskexceptions">Mask Exceptions</h3>
+<ul>
+<li>when an exceptional condition is detected and handled at a low level in the system so that higher levels of software do not need to be aware of the condition</li>
+<li>doesn't work in all situations, but the reduced interface allows classes to be deeper</li>
+<li>example of pulling complexity downward</li>
+</ul>
+<h3 id="exceptionaggregation">Exception aggregation</h3>
+<ul>
+<li>handle many exceptions with a single piece of code, rather than writing distinct handlers for many individual exceptions</li>
+<li>exception handling design pattern</li>
+<li>if system processes a series of requests, it's useful to define an exception that aborts the current request, cleans up the system's state, and contnues with the next request</li>
+<li>the exception is caught in a single place near the top of the system's request-handling loop</li>
+<li>exception can be thrown at any point in the processing of a request to abort the request</li>
+<li>different subclasses of the exception can be defined for different conditions</li>
+<li>aggregation works best if an exception propagates several levels up the stack before it is handled; results in more exceptions from more methods to be handled in the same place</li>
+<li>form of general-purpose mechanism over special-purpose</li>
+</ul>
+<h3 id="crashapplication">Crash Application</h3>
+<ul>
+<li>certain errors are not worth tryign to handle</li>
+<li>print diagnostic information and abort application</li>
+<li><code>ckalloc</code> vs <code>malloc</code></li>
+</ul>
+<h3 id="designspecialcasesoutofexistence">Design special cases out of existence</h3>
+<ul>
+<li>special cases can result in code with lots of if statements which make it hard to understand</li>
+<li>design normal case in a way that automatically handles special case without extra code</li>
+</ul>
+<h3 id="takingittoofar">Taking it too far</h3>
+<ul>
+<li>defining away exceptions or masking them makes sense if the exception information isn't needed outside the moduel</li>
+<li>with exceptions, we must determine what is important and what is not important. Things that are not important should be hidden, and the more of them the better. If something is important, it must be exposed</li>
+</ul>
+<hr />
+<h2 id="chapter11designittwice">Chapter 11: Design it Twice</h2>
+<blockquote>
+  <p>designing software is hard, so it's unlikely that your first thought about how to structre a module or system will produce the best design</p>
+</blockquote>
+<ul>
+<li>you will end up with a much better result if you consider multiple options for each major decison decision</li>
+<li>don't need to pin down every detail, high-level sketch of the important methods is more than enough</li>
+<li>try to pick radically different approaches</li>
+<li>even if there is only one obvious approach, try another one</li>
+<li>after you have sketched out all the alternatives, make a list of pros and cons for each one</li>
+<li>consider</li>
+<li>which version has the simpler interface?</li>
+<li>is one interface more general-purpose than another?</li>
+<li>does one interface enable a more efficient implementation?</li>
+<li>once you have compared the designs, you can make an informed decision</li>
+<li>can apply this principle to many levels of a system</li>
+<li>goals are different for the interface and implementation so consider the best approach</li>
+<li>this should not take a lot of extra time and it will pay off in the long run as you will not to deal with the extra complexity and cognitive load that poor design brings</li>
+</ul>
+<h3 id="ego">Ego</h3>
+<ul>
+<li>smart people feel pressure to get things right the firs ttime</li>
+<li>solving hard problems requires complex solutions where the first design is rarely the best one</li>
+</ul>
+<hr />
+<h2 id="chapter12whywritecommentsthefourexcuses">Chapter 12: Why Write Comments? The Four Excuses</h2>
+<ul>
+<li>comments are essential to help developers under a system and work efficiently</li>
+<li>documentation plays an important role in abstraction; without comments, you can't hdie complexity</li>
+<li>process of writing comments will improve a system's design</li>
+<li>good software design loses value if its poorly documented</li>
+</ul>
+<h3 id="goodcodeisselfdocumenting">Good code is self-documenting</h3>
+<blockquote>
+  <p>If users must read the code of a method in orer to use it, then there is no abstraction</p>
+</blockquote>
+<ul>
+<li>there are things you can do when writing code to reduce the need of comments, but there is a significant amount of design information that can't be represented in comments</li>
+<li>it's not practical for users to read the code for large projects</li>
+<li>important that comments are written in a human language, which makes them less precise but provides more expressive power</li>
+</ul>
+<h3 id="idonthavetimetowritecomments">I don't have time to write comments</h3>
+<ul>
+<li>if you want a clean software structure, which will allow you to work efficiently over the long-term, then you must take some time to create that structure</li>
+<li>writing good comments won't take more than 10% of your development time</li>
+<li>benefits of good documentation will quickly offset this cost</li>
+</ul>
+<h3 id="commentsgetoutofdateandbecomemisleading">Comments get out of date and become misleading</h3>
+<ul>
+<li>keeping documenting up-to-date does not require an enormous effort</li>
+<li>code reviews provide a great mechanicsm for detecting and fixing stale comments</li>
+</ul>
+<h3 id="benefitsofwellwrittencomments">Benefits of well-written comments</h3>
+<blockquote>
+  <p>Comments capture information that was in the midn of the designer but couldn't be represented in the code</p>
+</blockquote>
+<ul>
+<li>comments are valuable even on single-person projects as many of the details of the original design will have been forgotten</li>
+<li>documentation reduces cognitive load by providing developers with the ifnormation they need to make changes and by making it easy for developers to ignore information that is irrelevant</li>
+<li>docuemtnation can also reduce unknown unknowns by clarifying the structure of the system so that it is clear what is information and code is relevant for any given change</li>
+</ul>
+<hr />
+<h2 id="chapter13commentsshoulddescribethingsthatarentobviousfromthecode">Chapter 13: Comments Should Describe Things that Aren't Obvious from the Code</h2>
+<ul>
+<li>comments can make it explicit and clear why code is needed or implemented in a particular way</li>
+<li>developers should be able to understand the abstraction provided by a module without reading any code other than its externally visible declaration</li>
+</ul>
+<h3 id="pickconventions">Pick conventions</h3>
+<ul>
+<li>conventions ensure consistency and force you to write comments</li>
+<li>types of comments:</li>
+<li><strong>interface</strong> comment block that precedes the declaration of a module</li>
+<li><strong>data structure member</strong> next to the declaration of a field in a data structure</li>
+<li><strong>implementation</strong> comment inside the code of a method or a function that describes how it works internally</li>
+<li><strong>cross-module</strong> describing dependencies that cross module boundaries</li>
+</ul>
+<h3 id="dontrepeatthecode">Don't repeat the code</h3>
+<blockquote>
+  <p>Could someone who has never seen the code write the comments just by looking at the code next to the comment?</p>
+</blockquote>
+<ul>
+<li>use different words in the comment from those in the name of the entity being described</li>
+</ul>
+<h3 id="lowerlevelcommentsaddprecision">Lower-level comments add precision</h3>
+<blockquote>
+  <p>Lower-level comments offer precision by clarifying exact meaning</p>
+</blockquote>
+<ul>
+<li>comments augment the code by providing information at a different level of detail</li>
+<li>think about units, boundary conditions, null values, side effects, etc</li>
+<li>when documenting a variable, think nouns not verbs</li>
+</ul>
+<h3 id="higherevelcommentsenchanceintuition">Higher-evel comments enchance intuition</h3>
+<blockquote>
+  <p>High-level comments offer intuition by describing reasoning behind the code</p>
+</blockquote>
+<ul>
+<li>think about</li>
+<li>what is the code trying to do</li>
+<li>what is the simplest thing you can say that explans everything in the code</li>
+<li>what is the most important thing about this code</li>
+<li>need to ignore low-level details and think about system only in terms of most fundamental characteristics</li>
+<li>comments describing "how we get here" are useful</li>
+</ul>
+<h3 id="interfacedocumentation">Interface documentation</h3>
+<blockquote>
+  <p>Provide information that someone needs to know in order to use a clas or method</p>
+</blockquote>
+<ul>
+<li>code isn't suitable for defining abstractions</li>
+<li>if you want code that presents good abstractions, you must document those abstractions with comments</li>
+<li>separate interface comments from implementation comments</li>
+</ul>
+<h3 id="implementationcommentswhatandwhynothow">Implementation comments: what and why, not how</h3>
+<blockquote>
+  <p>Help readers understand what code is doing and why it was done that way</p>
+</blockquote>
+<ul>
+<li>add comment before major blocks to provide high-level description of what that block does</li>
+<li>have comment before loop that describes what happens in each iteration</li>
+<li>loop comments are only needed longer or more complex loops, where it may not be obvious what the loop is doing</li>
+<li>if you are fixing a bug, add a comment to the issue in the bug tracking database</li>
+</ul>
+<h3 id="crossmoduledesigndecisions">Cross-module design decisions</h3>
+<ul>
+<li>challenge is to finding a place to put it where it can be found</li>
+<li>design_notes central file with references in modules, as required</li>
+</ul>
+<hr />
+<h2 id="chapter14choosingnames">Chapter 14: Choosing Names</h2>
+<blockquote>
+  <p>Selecting names for variables, methods, and other entities is one of the most underrated aspects of software design. Good names are a form of documentation: they make code easier to understand. They reduce the need for other documentation and make it easier to detect errors. Conversely, poor name choices increase the complexity of code and create ambiguities and misunderstandings that can result in bugs. Name chocie is an example of the principle that complexity is incremental. Choosing a mediocre name for particular variable, as opposed to the best possible name, probably won't have much impact on the overall complexity of a system. However, software systems have thousands of variables; choosing good names for all of these will have a significant impact on complexity and manageability.</p>
+</blockquote>
+<ul>
+<li>most develoeprs don't spend much time thinking about names; they tend to use the first name that comes to mind as long as it is reasonably close to matching the thing it names</li>
+<li>good names have 2 properties: precision and consistency</li>
+</ul>
+<h3 id="createanimage">Create an image</h3>
+<ul>
+<li>goal is to create an image in the mind of the reader about the nature of the thing being named</li>
+<li>good name describes what the underlying entity is and what it is not</li>
+<li>names become unwieldy if they contain more than two or three words</li>
+<li>names are a form of abstraction: they provide a simplified way of thinking about a more complex underlying entity</li>
+</ul>
+<h3 id="namesshouldbeprecise">Names should be precise</h3>
+<ul>
+<li>most common problem is that names are too generic or vague</li>
+<li>if you find it difficult to come up with a name for a particular variable that is precise, intuitive, and not too long, this is red flag</li>
+<li>variable may not have a clear definition or purpose</li>
+<li>process of choosing a good name can improve your design by identifying weaknesses</li>
+</ul>
+<h3 id="usenamesconsistently">Use names consistently</h3>
+<ul>
+<li>consistency reduces cognitive load: reader has seen the name in one context, they can reuse their knowledge and make assumptions when they see the name in a different context</li>
+<li>three requirements:</li>
+</ul>
+<ol>
+<li>always use the common name for a given purpose</li>
+<li>never use the common name for anythign other than the given purpose</li>
+<li>make sure the purpose is narrow enough that all variables with the name have the same behavior</li>
+</ol>
+<h3 id="morethoughts">More Thoughts</h3>
+<ul>
+<li>readability must be determined by the readers, not the writers</li>
+<li>developing a skill for naming things is an investment: it's hard at first, but becomes easier the more you do it</li>
+</ul>
+<hr />
+<h2 id="chapter15writethecommentsfirst">Chapter 15: Write The Comments First</h2>
+<blockquote>
+  <p>Use comments as part of the design process</p>
+</blockquote>
+<ul>
+<li>best time to write comments is at the beginning of the process</li>
+<li>three benefits:</li>
+</ul>
+<ol>
+<li>produces better comments as key design issues are fresh in your mind</li>
+<li>comments are an abstraction and can help indicate complexity before you write code</li>
+<li>it makes things more fun (calm down, John Ousterhout)</li>
+</ol>
+<h3 id="delayedcommentsarebadcomments">Delayed comments are bad comments</h3>
+<ul>
+<li>delaying documentation often means it does not get written</li>
+<li>even if you go back, you forgot what was in your head during the design process</li>
+<li>most important ocmments will be missing important facts</li>
+</ul>
+<h3 id="writethecommentsfirst">Write the comments first</h3>
+<ul>
+<li>write by writing the class interface comment</li>
+<li>write interface comments and signatures for the most important public methods, but leave method bodies empty</li>
+<li>iterate a bit over comment until basic structure feels right</li>
+<li>write declarations and commnets for the most important class instance variables</li>
+<li>fill in bodies of methods, adding implementation comments as needed</li>
+<li>will find flaws in your decision</li>
+</ul>
+<hr />
+<h2 id="chapter16modifyingexistingcode">Chapter 16: Modifying Existing Code</h2>
+<ul>
+<li>it's not possible to conceive the right design for a system at the outset; the design of a mature system is determined more by changes made during the system's evolution than by any initial conception</li>
+</ul>
+<h3 id="staystraetgic">Stay Straetgic</h3>
+<ul>
+<li>when developers go into existing code to make changes such as bug fixes or new features, they don't usually think strategically</li>
+<li>usually think what is the smallest possible change I can make that does what I need?</li>
+<li>if you invest a little extra time to refactor and improve the system design, you'll end up with a cleaner system</li>
+<li>whenever you modify any code, try to find a way to improve the system design at least a little bit in the process</li>
+<li>every development organization should plan to spend a small fraction of its total effort on cleanup and refactoring; this work will pay for itself over the long run</li>
+</ul>
+<h3 id="maintainingcommentskeepthecommentsnearthecode">Maintaining comments: keep the comments near the code</h3>
+<ul>
+<li>best way to ensure that comments get updated is to postiion them close to the close they describe, so develoeprs will see them when they change the code</li>
+<li>if a method has three major phases, don't write one comment at the top of the method that describes all of the phases in detail, write a separate comment for each phase</li>
+</ul>
+<h3 id="commentsbelonginthecodenotthecommitlog">Comments belong in the code, not the commit log</h3>
+<ul>
+<li>place things where develoeprs are likely to see it</li>
+</ul>
+<h3 id="maintainingcommentsavoidduplication">Maintaining comments: avoid duplication</h3>
+<ul>
+<li>if information is already documented someplace outside of your projet, don't repeat the documentation; just reference the external source</li>
+</ul>
+<h3 id="maintainingcommentscheckthediffs">Maintaining comments: check the diffs</h3>
+<ul>
+<li>always make sure the change you made is also reflected in the comments; do this during the PR process</li>
+</ul>
+<h3 id="higherlevelcommentsareeasiertomaintain">Higher-level comments are easier to maintain</h3>
+<ul>
+<li>do not reflect details of the code so they will not be affected by minor code changes; only changes in overall behavior will affect these comments</li>
+</ul>
+<hr />
+<h2 id="chapter17consistency">Chapter 17: Consistency</h2>
+<ul>
+<li>consistency is a powerful tool for reducing the complexity of a system and making its behavior more obvious</li>
+<li>consistency means that similar things are done in similar ways and dissimilar things are done in different ways</li>
+<li>once you have learned how somethign is done in one place, you can use that knowledge to understand other places that use the same approach</li>
+</ul>
+<h3 id="ensuringconsistency">Ensuring Consistency</h3>
+<ul>
+<li>consistence is hard to maintain, especially when manny people work on a project over a long time</li>
+<li>create a document that lists the most important overall conventions such as coding style guidelines</li>
+<li>best way to enforce conventions is to write a tool that checks for violations, and make sure that code cannot be committed to the repository unless it passes the checker</li>
+<li>code reviews provide an opportunity for education</li>
+<li>do not change existing conventions; a better idea is not a sufficient excuse to introduce inconsistencies</li>
+<li>reconsidering established conventions is rarely a good use of developer time</li>
+</ul>
+<hr />
+<h2 id="chapter18codeshouldbeobvious">Chapter 18: Code Should be Obvious</h2>
+<blockquote>
+  <p>Software should be designed for ease of reading, not ease of writing</p>
+</blockquote>
+<ul>
+<li>obvious code can be read quickly, without much thought</li>
+<li>unobvious code must expend a lot of time and energy to understand it; reduces efficiency and increases likelihood of misunderstanding and bugs</li>
+<li>it's easier to notice thatsomeone else's code is nonobvious than to see problems with your own code</li>
+<li>code review plays a big part in finding obviousness of code</li>
+</ul>
+<h3 id="thingsthatmakecodemoreobvious">Things that make code more obvious</h3>
+<ul>
+<li>use design techniques such as abstractions</li>
+<li>ensure readers always have information they need to understand code</li>
+<li>good names</li>
+<li>consistency</li>
+<li>white space</li>
+<li>comments help us understand code that can't be made more obvoius</li>
+</ul>
+<h3 id="thingsthatmakecodelessobvious">Things that make code less obvious</h3>
+<ul>
+<li>event driven programming where application responds to external occurences; hard to follow flow of control</li>
+<li>generic containers with grouped elements; use <code>collections.namedtuples</code> instead</li>
+<li>code that violates reader's expectations</li>
+</ul>
+<hr />
+<h2 id="chapter19softwaretrends">Chapter 19: Software Trends</h2>
+<h3 id="objectorientedprogrammingandinheritance">Object-oriented programming and inheritance</h3>
+<ul>
+<li>private methods and variables can be used to ensure information hiding</li>
+<li>forms of inheritance:</li>
+</ul>
+<ol>
+<li>Interface Inheritance<ul>
+<li>parent class defines the signature for one or more methods, but does not implement the methods</li>
+<li>provides leverage against complexity by reusing the same interface for multiple purposes</li>
+<li>many different implementations of interface means it is deep</li></ul></li>
+<li>Implementation Inheritance<ul>
+<li>parent class defines not only signatures, but also default implemtnations</li>
+<li>reduces the amount of code that needs to be modified, but creates dependencies between parent and subclasses</li>
+<li>look into composition before using implementation inheritance</li></ul></li>
+</ol>
+<ul>
+<li>mechanisms of OOP can assist in implementing clean designs, they do not guarantee good designs</li>
+</ul>
+<h3 id="agiledevelopment">Agile Development</h3>
+<ul>
+<li>mostly about process of software development (organizing teams, managing schedules, the role of unit testing, interacting with customers, etc) as opposed to software design</li>
+<li>development should be incremental and iterative; each increment adds a few new abstractions and refactors existing abstractions based on experience</li>
+<li>Agile tends to focus developers on features, not abstractions and it encourages developers to put off design decisions in order to produce working software</li>
+</ul>
+<h3 id="unittests">Unit Tests</h3>
+<ul>
+<li>tests facilitate refactoring</li>
+<li>without a test suite, it's dangerous to make major structural changes to a system</li>
+</ul>
+<h3 id="testdrivendevelopment">Test-driven Development</h3>
+<ul>
+<li>TDD focuses attention on getting specific features working rather than finding the best design</li>
+<li>it makes sense to write tests first when fixing bugs; replicate issue and fix</li>
+</ul>
+<h3 id="designpattern">Design Pattern</h3>
+<ul>
+<li>not every problem can be solved cleanly with an existing design pattern</li>
+</ul>
+<hr />
+<h2 id="chapter20designingforperformance">Chapter 20: Designing for Performance</h2>
+<blockquote>
+  <p>Clean design and high performance are compatible</p>
+</blockquote>
+<ul>
+<li>simpler code runs faster than complex code</li>
+<li>deep classes are more efficient than shallow classes as they get more work done for each function call</li>
+<li>before making any changes, measure the system's existing behavior</li>
+<li>find where we can make the biggest impact</li>
+<li>provides a baseline to see how much we improved performance</li>
+<li>remove special cases from critical path. when redesigning for performance, try to minimize the number of special cases you must check</li>
+</ul>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2025 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
