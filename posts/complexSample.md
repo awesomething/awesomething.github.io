@@ -1,35 +1,7 @@
 ---
 title: Comp
-date: 2020-01-12
+date: 2024-01-12
 ---
-
-The new tools for the complex agent should be like now I am gonna identify the data I need, k I did nt find the data I need. 
-
-Now, I'm going to go do a similar Search for tables. Do I have the data I need, no?
-
-Now, I'm going to go to search for columns right. 
-
-And so we proposing, we can do this concurrently or in parallel.
-
-Similarity searches. 
-
-Get Queries. 
-
-Get Raw tables not reporting tables. 
-
-Business rules 
-
-get measures
-
-AĹL into one tool. 
-
-It goes to the next step to, like, find the joins and stuff because I'm like, can't really do anything with join information until it knows like, what tables it's actually going to use. 
-
-So if it didn't get the data I need before the joins, what does it do like? 
-
-Are we just Gonna go Back to the user to ask follow up questions? 
-
-Would it just like do another similarity search, Uh, maybe rephrase the question A little bit, engaging the user wt an approval button for deeper analysis. 
 
 \# Complex Agent — Tool Architecture Analysis & Gaps
 
