@@ -1,7 +1,4 @@
----
-title:  RAG Agent — Custom Fix
-date: 2022-11-01
----
+
 
 ## 1. Diagnosis (aligned with the meeting)
 
