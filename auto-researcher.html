@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>auto researcher</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sat, November 01, 2025">Sat, November 01, 2025</time>
+        <h1 class="mar-b-7">auto researcher</h1>
+    </header>
+    <hr />
+<p>name: autoresearch
+description: 'Autonomous iterative experimentation loop for any programming task. Guides the user through defining goals, measurable metrics, and scope constraints, then runs an autonomous loop of code changes, testing, measuring, and keeping/discarding results. Inspired by Karpathy''s autoresearch. USE FOR: autonomous improvement, iterative optimization, experiment loop, auto research, performance tuning, automated experimentation, hill climbing, try things automatically, optimize code, run experiments, autonomous coding loop. DO NOT USE FOR: one-shot tasks, simple bug fixes, code review, or tasks without a measurable metric.'
+license: MIT
+compatibility: Requires git. The project must be a git repository. Requires terminal access to run commands.
+metadata:
+  author: luiscantero</p>
+<h2 id="inspiredbyhttpsgithubcomkarpathyautoresearch">  inspired-by: https://github.com/karpathy/autoresearch</h2>
+<h1 id="autoresearchautonomousiterativeexperimentation">Autoresearch: Autonomous Iterative Experimentation</h1>
+<p>An autonomous experimentation loop for any programming task. You define the goal and how to measure it; the agent iterates autonomously -- modifying code, running experiments, measuring results, and keeping or discarding changes -- until interrupted.</p>
+<p>This skill is inspired by <a href="https://github.com/karpathy/autoresearch">Karpathy's autoresearch</a>, generalized from ML training to <strong>any programming task with a measurable outcome</strong>.</p>
+<hr />
+<h2 id="agentbehaviorrules">Agent Behavior Rules</h2>
+<ol>
+<li><strong>DO</strong> guide the user through the Setup phase interactively before starting the loop.</li>
+<li><strong>DO</strong> establish a baseline measurement before making any changes.</li>
+<li><strong>DO</strong> commit every experiment attempt before running it (so it can be reverted cleanly).</li>
+<li><strong>DO</strong> keep a results log (TSV) tracking every experiment.</li>
+<li><strong>DO</strong> revert changes that do not improve the metric (git reset to last known good).</li>
+<li><strong>DO</strong> run autonomously once the loop starts -- never pause to ask "should I continue?".</li>
+<li><strong>DO NOT</strong> modify files the user marked as out-of-scope.</li>
+<li><strong>DO NOT</strong> skip the measurement step -- every experiment must be measured.</li>
+<li><strong>DO NOT</strong> keep changes that regress the metric unless the user explicitly allowed trade-offs.</li>
+<li><strong>DO NOT</strong> install new dependencies or make environment changes unless the user approved it.</li>
+</ol>
+<hr />
+<h2 id="phase1setupinteractive">Phase 1: Setup (Interactive)</h2>
+<p>Before any experimentation begins, work with the user to establish these parameters.
+Ask the user directly for each item. Do not assume or skip any.</p>
+<h3 id="11definethegoal">1.1 Define the Goal</h3>
+<p>Ask the user:</p>
+<blockquote>
+  <p><strong>What are you trying to improve or optimize?</strong></p>
+  <p>Examples: execution time, memory usage, binary size, test pass rate, code coverage,
+  API response latency, throughput, error rate, benchmark score, build time, bundle size,
+  lines of code, cyclomatic complexity, etc.</p>
+</blockquote>
+<p>Record the user's answer as the <strong>goal</strong>.</p>
+<h3 id="12definethemetric">1.2 Define the Metric</h3>
+<p>Ask the user:</p>
+<blockquote>
+  <p><strong>How do we measure success? What exact command produces the metric?</strong></p>
+  <p>I need:</p>
+  <ol>
+  <li><strong>The command</strong> to run (e.g., <code>dotnet test</code>, <code>npm run benchmark</code>, <code>time ./build.sh</code>, <code>pytest --tb=short</code>)</li>
+  <li><strong>How to extract the metric</strong> from the output (e.g., a regex pattern, a specific line, a JSON field)</li>
+  <li><strong>Direction</strong>: Is lower better or higher better?</li>
+  </ol>
+  <p>Example: "Run <code>dotnet test --logger trx</code>, count passing tests. Higher is better."
+  Example: "Run <code>hyperfine './my-program'</code>, extract mean time. Lower is better."</p>
+</blockquote>
+<p>Record:</p>
+<ul>
+<li><code>METRIC_COMMAND</code>: the command to run</li>
+<li><code>METRIC_EXTRACTION</code>: how to extract the numeric metric from output</li>
+<li><code>METRIC_DIRECTION</code>: <code>lower_is_better</code> or <code>higher_is_better</code></li>
+</ul>
+<h3 id="13definethescope">1.3 Define the Scope</h3>
+<p>Ask the user:</p>
+<blockquote>
+  <p><strong>Which files or directories am I allowed to modify?</strong></p>
+  <p>And which files are OFF LIMITS (read-only)?</p>
+</blockquote>
+<p>Record:</p>
+<ul>
+<li><code>IN_SCOPE_FILES</code>: files/dirs the agent may edit</li>
+<li><code>OUT_OF_SCOPE_FILES</code>: files/dirs that must not be modified</li>
+</ul>
+<h3 id="14defineconstraints">1.4 Define Constraints</h3>
+<p>Ask the user:</p>
+<blockquote>
+  <p><strong>Are there any constraints I should respect?</strong></p>
+  <p>Examples:</p>
+  <ul>
+  <li>Time budget per experiment (e.g., "each run should take &lt; 2 minutes")</li>
+  <li>No new dependencies</li>
+  <li>Must keep all existing tests passing</li>
+  <li>Must not change the public API</li>
+  <li>Must maintain backward compatibility</li>
+  <li>VRAM/memory limit</li>
+  <li>Code complexity limits (prefer simpler solutions)</li>
+  </ul>
+</blockquote>
+<p>Record as <code>CONSTRAINTS</code>.</p>
+<h3 id="15definetheexperimentbudgetoptional">1.5 Define the Experiment Budget (Optional)</h3>
+<p>Ask the user:</p>
+<blockquote>
+  <p><strong>How many experiments should I run, or should I just keep going until you stop me?</strong></p>
+  <p>You can say a number (e.g., "try 20 experiments") or "unlimited" (I'll run until you interrupt).</p>
+</blockquote>
+<p>Record as <code>MAX_EXPERIMENTS</code> (number or <code>unlimited</code>).</p>
+<h3 id="16simplicitycriterion">1.6 Simplicity Criterion</h3>
+<p>Inform the user of the default simplicity policy:</p>
+<blockquote>
+  <p><strong>Simplicity policy (default):</strong> All else being equal, simpler is better. A small improvement
+  that adds ugly complexity is not worth it. Removing code while maintaining or improving
+  the metric is a great outcome. I'll weigh the complexity cost against the improvement
+  magnitude. Does this policy work for you, or do you want to adjust it?</p>
+</blockquote>
+<p>Record any adjustments as <code>SIMPLICITY_POLICY</code>.</p>
+<h3 id="17confirmsetup">1.7 Confirm Setup</h3>
+<p>Summarize all parameters back to the user in a clear table:</p>
+<p>| Parameter          | Value                        |
+| ------------------ | ---------------------------- |
+| Goal               | …                          |
+| Metric command     | …                          |
+| Metric extraction  | …                          |
+| Direction          | lower is better / higher … |
+| In-scope files     | …                          |
+| Out-of-scope files | …                          |
+| Constraints        | …                          |
+| Max experiments    | …                          |
+| Simplicity policy  | …                          |</p>
+<p>Ask the user to confirm. Do not proceed until confirmed.</p>
+<hr />
+<h2 id="phase2branchbaseline">Phase 2: Branch &amp; Baseline</h2>
+<p>Once the user confirms:</p>
+<ol>
+<li><p><strong>Create a branch</strong>: Propose a tag based on today's date (e.g., <code>autoresearch/mar17</code>).
+Create the branch: <code>git checkout -b autoresearch/&lt;tag&gt;</code>.</p></li>
+<li><p><strong>Read in-scope files</strong>: Read all files that are in scope to build full context of the current state.</p></li>
+<li><p><strong>Initialize results.tsv</strong>: Create <code>results.tsv</code> in the repo root with the header row:</p></li>
+</ol>
+<pre><code>   experiment    commit  metric  status  description
+</code></pre>
+<p>Add <code>results.tsv</code> and <code>run.log</code> to <code>.git/info/exclude</code> (append if not already present) so they stay untracked without modifying any tracked files.</p>
+<ol start="4">
+<li><p><strong>Run the baseline</strong>: Execute the metric command on the current unmodified code.
+Record the result as experiment <code>0</code> with status <code>baseline</code> in <code>results.tsv</code>.</p></li>
+<li><p><strong>Report baseline</strong> to the user:</p></li>
+</ol>
+<blockquote>
+  <p>Baseline established: <strong>[metric_name] = [value]</strong>
+  Starting autonomous experimentation loop.</p>
+</blockquote>
+<hr />
+<h2 id="phase3experimentloop">Phase 3: Experiment Loop</h2>
+<p>Run this loop continuously. Do not stop to ask the user. Run until:</p>
+<ul>
+<li><code>MAX_EXPERIMENTS</code> is reached, OR</li>
+<li>The user manually interrupts</li>
+</ul>
+<h3 id="foreachexperiment">For each experiment:</h3>
+<pre><code>LOOP:
+  1. THINK   - Analyze previous results and the current code.
+               Generate an experiment hypothesis.
+               Consider: what worked, what didn't, what hasn't been tried.
+
+  2. EDIT    - Modify the in-scope file(s) to implement the idea.
+               Keep changes focused and minimal per experiment.
+
+  3. COMMIT  - git add + git commit with a short descriptive message.
+               Format: "experiment: &lt;short description of what changed&gt;"
+
+  4. RUN     - Execute the metric command.
+               Redirect output to run.log so it does not flood the context window.
+               Use shell-appropriate redirection:
+               - Bash/Zsh: `&lt;command&gt; &gt; run.log 2&gt;&amp;1`
+               - PowerShell: `&lt;command&gt; *&gt; run.log`
+
+  5. MEASURE - Extract the metric from run.log.
+               If extraction fails (crash/error), read the last 50 lines
+               of run.log for the error.
+
+  6. DECIDE  - Compare metric to the current best:
+               - IMPROVED: Keep the commit. Update the "best" baseline.
+                 Log status = "keep".
+               - SAME OR WORSE: Revert. `git reset --hard HEAD~1`.
+                 Log status = "discard".
+               - CRASH: Attempt a quick fix (typo, import, simple error).
+                 Amend the experiment commit (`git commit --amend`) with the fix
+                 and rerun. The experiment keeps its original number.
+                 If unfixable after 2 attempts, revert the entire experiment
+                 (`git reset --hard HEAD~1`) and log status = "crash".
+
+  7. LOG     - Append a row to results.tsv:
+               experiment_number  commit_hash  metric_value  status  description
+
+  8. CONTINUE - Go to step 1.
+</code></pre>
+<h3 id="experimentstrategy">Experiment Strategy</h3>
+<p>When generating experiment ideas, follow this priority order:</p>
+<ol>
+<li><strong>Low-hanging fruit first</strong>: Simple parameter tweaks, obvious inefficiencies.</li>
+<li><strong>Informed by results</strong>: If a direction showed promise, explore further in that direction.</li>
+<li><strong>Diversify after plateaus</strong>: If the last 3-5 experiments all failed, try a different approach entirely.</li>
+<li><strong>Combine winners</strong>: If experiments A and B each improved independently, try combining them.</li>
+<li><strong>Simplification passes</strong>: Periodically try removing code/complexity to see if the metric holds.</li>
+<li><strong>Radical changes</strong>: After exhausting incremental ideas, try larger architectural changes.</li>
+</ol>
+<h3 id="handlingconstraints">Handling Constraints</h3>
+<ul>
+<li><strong>Time budget</strong>: If a run exceeds 2x the expected duration, kill it and treat as a crash.</li>
+<li><strong>Existing tests</strong>: If constraints require tests to pass, run them before/after and revert if they break.</li>
+<li><strong>Memory/resources</strong>: Monitor and revert if resource usage exceeds stated limits.</li>
+</ul>
+<hr />
+<h2 id="phase4reporting">Phase 4: Reporting</h2>
+<p>When the loop ends (budget reached or user interrupts):</p>
+<ol>
+<li><strong>Print the full results.tsv</strong> as a formatted table.</li>
+<li><strong>Summarize</strong>:</li>
+</ol>
+<ul>
+<li>Total experiments run</li>
+<li>Experiments kept / discarded / crashed</li>
+<li>Starting metric (baseline) vs. final metric</li>
+<li>Improvement percentage</li>
+<li>Top 3 most impactful changes</li>
+</ul>
+<ol>
+<li><strong>Show the cumulative git log</strong> of kept experiments:
+<code>git log --oneline &lt;start_commit&gt;..HEAD</code></li>
+<li><strong>Recommend next steps</strong>: Based on the results, suggest what a human researcher might try next (ideas that were too risky/complex for automated experimentation).</li>
+</ol>
+<hr />
+<h2 id="quickreference">Quick Reference</h2>
+<h3 id="resultstsvformat">Results TSV Format</h3>
+<p>Tab-separated, 5 columns:</p>
+<pre><code>experiment    commit  metric  status  description
+0    a1b2c3d 0.997900    baseline    unmodified code
+1    b2c3d4e 0.993200    keep    increase learning rate to 0.04
+2    c3d4e5f 1.005000    discard switch to GeLU activation
+3    d4e5f6g 0.000000    crash   double model width (OOM)
+</code></pre>
+<h3 id="gitworkflow">Git Workflow</h3>
+<ul>
+<li>All experiments happen on the <code>autoresearch/&lt;tag&gt;</code> branch</li>
+<li>Each experiment is committed before running</li>
+<li>Failed experiments are reverted with <code>git reset --hard HEAD~1</code></li>
+<li>Successful experiments advance the branch</li>
+<li><code>results.tsv</code> and <code>run.log</code> stay untracked (added to <code>.git/info/exclude</code>)</li>
+</ul>
+<h3 id="keyprinciples">Key Principles</h3>
+<ol>
+<li><strong>Measure everything</strong>: No experiment without a measurement.</li>
+<li><strong>Revert failures</strong>: The branch only advances on improvements.</li>
+<li><strong>Stay autonomous</strong>: Never stop to ask. Think harder if stuck.</li>
+<li><strong>Keep it simple</strong>: Complexity is a cost. Weigh it against gains.</li>
+<li><strong>Log everything</strong>: The TSV is the research journal.</li>
+</ol>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

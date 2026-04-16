@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>RAG Agent — Custom Fix</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Tue, November 01, 2022">Tue, November 01, 2022</time>
+        <h1 class="mar-b-7">RAG Agent — Custom Fix</h1>
+    </header>
+    <h2 id="1diagnosisalignedwiththemeeting">1. Diagnosis (aligned with the meeting)</h2>
+<p>Two product-critical defects were called out in the walkthrough, and both are fixable at the <code>rag_agent.py</code> / <code>prompt.py</code> layer without touching the Terraform <code>discovery_engine.tf</code> app definition:</p>
+<ol>
+<li><strong>No conversation continuity.</strong> Each turn hits <code>/search</code> in isolation, so the model cannot resolve follow-ups like <em>"what about the second one?"</em> or <em>"expand on that"</em>. The managed Vertex AI Search / Discovery Engine service natively supports this: if you pass a <code>session</code> resource name on the <code>SearchRequest</code>, Google performs <strong>query standing</strong> server-side (previous turn <em>"How did Alphabet do in 2022?"</em> + current <em>"How about 2023?"</em> → interpreted as <em>"How did Alphabet do in 2023?"</em>). We never need to hand-roll summarised history.</li>
+<li><strong>Weak / default summary prompt.</strong> <code>populate_search_request_payload</code> already has <code>model_prompt_spec</code> commented out (line 174–176 in the existing <code>rag_agent.py</code>). With no preamble, the summary model falls back to generic, verbose, ungrounded answers. The fix is to pass a <code>preamble</code> inside <code>summarySpec.modelPromptSpec</code> — this is the LLM instruction for the <em>summary generator</em>, which is different from the ADK agent prompt in <code>prompt.py</code>.</li>
+</ol>
+<p>A third, smaller fix is required in <code>prompt.py</code> itself: the current <code>RAG_AGENT_PROMPT</code> has no guidance for interpreting follow-up questions in light of earlier turns. That matters because the ADK agent still decides <em>what query string to hand the tool</em>, and with no multi-turn guidance it will pass raw pronouns ("tell me more about it") straight through.</p>
+<p>Everything below preserves existing variable names, log lines, BigQuery logging via <code>log_vertex_ai_search_response</code>, the <code>filter='status: ANY("active")'</code> clause, and the <code>prepare_search_response</code> contract.</p>
+<hr />
+<h2 id="2howthefixlandsinthetwolayers">2. How the fix lands in the two layers</h2>
+<p>| Layer | What changes | Why |
+|---|---|---|
+| <code>prompt.py</code> | Two new strict rules added to <code>RAG_AGENT_PROMPT</code>. | The ADK agent must rewrite ambiguous follow-ups into standalone queries before calling the tool, so retrieval gets a self-contained query string. |
+| <code>rag_agent.py</code> — <code>retrieve_from_knowledge_base</code> | Lazily create a Discovery Engine <code>Session</code> on the first turn, cache its resource name in <code>tool_context.state["vertex_search_session"]</code>, and reuse it on every subsequent turn. | This is how the managed service knows which turns belong together. |
+| <code>rag_agent.py</code> — <code>populate_search_request_payload</code> | Accept an optional <code>session_resource_name</code>, attach it as <code>SearchRequest.session</code>, and set <code>sessionSpec.searchAsYouTypeSpec</code> defaults. | Enables server-side query standing. |
+| <code>rag_agent.py</code> — <code>populate_search_request_payload</code> | Uncomment + populate <code>model_prompt_spec.preamble</code> inside <code>summarySpec</code>. | Controls the summary model's tone, length, and grounding discipline. |
+| <code>rag_agent.py</code> — response parsing | Read <code>sessionInfo.name</code> + <code>sessionInfo.queryId</code> out of the response and persist them back to <code>tool_context.state</code>. | The <code>queryId</code> is what lets us coordinate a later <code>/answer</code> call against the same turn if we ever need it. Costs nothing to capture now. |</p>
+<p>No Terraform change is required for the first iteration — the existing Search app supports <code>session</code> and <code>modelPromptSpec</code> on every request. A Terraform change is only needed if we later want to bake a default preamble into the <code>servingConfig</code> so multiple clients share it (covered in §6).</p>
+<hr />
+<h2 id="3promptpyadditionstorag_agent_prompt">3. <code>prompt.py</code> — additions to <code>RAG_AGENT_PROMPT</code></h2>
+<p>Keep the existing header, existing six rules, and existing triple-quote style. Only two new rules are inserted (numbered 7 and 8) plus a short multi-turn clause at the top. All existing rules remain byte-for-byte identical.</p>
+<pre><code class="python language-python"># ────────────────────────────────────────────────────────────────────────────
+# RAG Agent
+# ────────────────────────────────────────────────────────────────────────────
+RAG_AGENT_PROMPT = """
+You are a Retrieval-Augmented Generation (RAG) specialist agent.
+Your job is to answer questions by retrieving relevant information from the
+knowledge base / document store and synthesising a clear, accurate response.
+
+You operate in a multi-turn conversation. The user may ask follow-up questions
+that depend on prior turns (for example "the second one", "what about 2023?",
+"expand on that"). Always resolve those references against the preceding
+conversation before calling the tool.
+
+STRICT RULES — follow in order, no exceptions:
+1. You MUST call the `retrieve_from_knowledge_base` tool for EVERY query,
+   no matter what. Never skip this step.
+2. Only after the tool returns results, synthesise and present the answer
+   using the retrieved content.
+3. Always cite the source document and chunk_id from the tool response.
+4. Keep answers concise and factual.
+5. NEVER answer from memory or prior knowledge — only use tool results.
+6. NEVER say "I could not find" without first calling the tool.
+7. Before calling the tool on a follow-up, rewrite the user's question into a
+   standalone query that includes the relevant entity from earlier turns.
+   Pass that rewritten query as the `query` argument. Example: user asks
+   "tell me more about the second one" after a list of vendors → call the
+   tool with "tell me more about &lt;vendor name from turn 1&gt;".
+8. If the user's reference is genuinely ambiguous and cannot be resolved from
+   the conversation, ask one short clarifying question instead of guessing.
+"""
+</code></pre>
+<p><strong>Why rule 7 is phrased as "rewrite before calling the tool" rather than "let Vertex do it":</strong> Vertex AI Search <em>does</em> perform query standing on its side when we pass a session, but it operates on the string we send. If the ADK agent passes the literal pronoun <em>"it"</em>, Vertex has less signal to work with than if we pass <em>"Acme Corp pricing"</em>. Doing the rewrite in the agent <strong>and</strong> passing the session gives us belt-and-braces: the agent disambiguates, and Vertex uses session history to refine ranking.</p>
+<hr />
+<h2 id="4rag_agentpypatch">4. <code>rag_agent.py</code> — patch</h2>
+<p>Only the changed / added pieces are shown. Everything else (imports, <code>filter_by='status: ANY("active")'</code>, logger calls, the <code>log_vertex_ai_search_response</code> BigQuery write, <code>prepare_search_response</code>, <code>_extract_summary_text</code>, <code>_extract_search_results_artifacts</code>, <code>_extract_snippet_from_snippets</code>, <code>get_vertex_ai_search_api_endpoint</code>, <code>get_request_header</code>) stays exactly as it is today.</p>
+<h3 id="41newhelperlazysessioncreation">4.1 New helper: lazy session creation</h3>
+<p>Add this helper immediately above <code>retrieve_from_knowledge_base</code>. It hits the Discovery Engine <code>sessions.create</code> REST endpoint, which is the same host we already call, with the same bearer token.</p>
+<pre><code class="python language-python">def get_or_create_vertex_search_session(tool_context: ToolContext) -&gt; str:
+    """Return a Vertex AI Search session resource name, creating one if needed.
+
+    The session resource name is cached in ``tool_context.state`` under the key
+    ``vertex_search_session`` so that every turn in the same ADK session reuses
+    the same Discovery Engine session. This is what gives the managed service
+    the conversation history it needs for query standing on follow-ups.
+
+    Returns:
+        str: Full session resource name, e.g.
+            ``projects/&lt;p&gt;/locations/&lt;l&gt;/collections/&lt;c&gt;/engines/&lt;e&gt;/sessions/&lt;id&gt;``
+    """
+    cached = tool_context.state.get("vertex_search_session", "")
+    if cached:
+        logger.debug("[ AI managed RAG Agent] Reusing cached Vertex AI Search session: %s", cached)
+        return cached
+
+    # Build the parent engine resource name from the same env vars used
+    # everywhere else in this file, so there is a single source of truth.
+    parent = (
+        f"projects/{os.getenv('GOOGLE_CLOUD_PROJECT')}/"
+        f"locations/{os.getenv('VERTEX_AI_SEARCH_LOCATION', 'us')}/"
+        f"collections/{os.getenv('VERTEX_AI_SEARCH_COLLECTION', 'default_collection')}/"
+        f"engines/{os.getenv('VERTEX_AI_SEARCH_DISCOVERY_ENGINE')}"
+    )
+    create_url = (
+        f"https://{os.getenv('VERTEX_AI_SEARCH_LOCATION', 'us')}-"
+        f"discoveryengine.googleapis.com/"
+        f"{os.getenv('VERTEX_AI_SEARCH_VERSION', 'v1')}/{parent}/sessions"
+    )
+
+    user_pseudo_id = tool_context.state.get("user_id", "") or tool_context.state.get("session_id", "")
+    body = {"userPseudoId": user_pseudo_id} if user_pseudo_id else {}
+
+    try:
+        resp = requests.post(create_url, headers=get_request_header(), json=body)
+        resp.raise_for_status()
+        session_name = resp.json().get("name", "")
+        if not session_name:
+            logger.warning("[ AI managed RAG Agent] Session creation returned no name; falling back to stateless search.")
+            return ""
+        tool_context.state["vertex_search_session"] = session_name
+        logger.info("[ AI managed RAG Agent] Created new Vertex AI Search session: %s", session_name)
+        return session_name
+    except Exception as e:
+        # Fail open: if session creation fails, we still want the search to
+        # succeed (just without continuity). This avoids a hard outage if the
+        # session API is rate-limited or the engine is not yet session-enabled.
+        logger.error("[ AI managed RAG Agent] Failed to create Vertex AI Search session: %s", e)
+        return ""
+</code></pre>
+<h3 id="42retrieve_from_knowledge_baseoneaddedlineandoneupdatedcall">4.2 <code>retrieve_from_knowledge_base</code> — one added line and one updated call</h3>
+<p>The existing body is untouched except for the two marked lines. The <code>logger.debug</code> / <code>logger.info</code> wording, the <code>additional_kwargs</code> dict, the <code>log_vertex_ai_search_response</code> call, <code>response.raise_for_status()</code>, <code>prepare_search_response</code>, and the final <code>tool_context.state["natural_language_answer"] = response</code> assignment all stay exactly as they are.</p>
+<pre><code class="python language-python">def retrieve_from_knowledge_base(query: str, tool_context: ToolContext) -&gt; dict:
+    """Retrieve relevant documents from the Vertex AI Discovery Engine knowledge base.
+
+    Performs a sequential RAG search pipeline:
+      1. Builds the search request payload with query expansion and spell correction.
+      2. Calls the Vertex AI Search REST API with bearer token authentication.
+      3. Parses the raw API response into a structured response with summary and citations.
+      4. Stores the natural language answer in ``tool_context.state``.
+    ...
+    """
+    try:
+        start_timep = datetime.now(UTC)
+
+        # Build query-aware dummy chunks so the agent always has content to work with
+        query_title = query.strip().rstrip("?")
+        logger.debug(
+            f"[ AI managed RAG Agent] Received RAG query: '{query}' — Building search request payload for Vertex AI Search API."
+        )
+
+        # &gt;&gt;&gt; ADDED: get (or lazily create) the Discovery Engine session so the
+        # managed service can do query standing across turns.
+        session_resource_name = get_or_create_vertex_search_session(tool_context)
+        # &lt;&lt;&lt;
+
+        # Build API request payload
+        payload = populate_search_request_payload(
+            query=query,
+            session_resource_name=session_resource_name,  # &lt;&lt;&lt; CHANGED: pass session through
+        )
+        logger.debug(f"[ AI managed RAG Agent] Constructed Vertex AI Search API payload: {payload}")
+
+        api_endpoint = get_vertex_ai_search_api_endpoint()
+        logger.debug("[ AI managed RAG Agent] Constructed Vertex AI Search API endpoint: %s", api_endpoint)
+
+        request_header = get_request_header()
+        logger.debug(
+            "[ AI managed RAG Agent] Generated request headers for Vertex AI Search API: %s", request_header
+        )
+
+        # API call to Vertex AI Search API
+        response = requests.post(api_endpoint, headers=request_header, json=payload)
+        result = response.json()
+        end_timep = datetime.now(UTC)
+
+        additional_kwargs = {
+            "user_id": tool_context.state.get("user_id", ""),
+            "session_id": tool_context.state.get("session_id", ""),
+            "conversation_id": tool_context.state.get("conversation_id", ""),
+            "question": query,
+            "time_taken": (end_timep - start_timep).total_seconds(),
+            "token_usage": tool_context.state.get("_token_usage", "[]"),
+        }
+
+        # Log the raw API response to BigQuery
+        log_vertex_ai_search_response(api_response=result, **additional_kwargs)
+
+        if not response.ok:
+            logger.error(
+                "[ AI managed RAG Agent] Vertex AI Search Failed with status %s, Response body %s",
+                response.status_code,
+                response.text,
+            )
+            response.raise_for_status()
+
+        # &gt;&gt;&gt; ADDED: persist the session info returned by the API so the next
+        # turn uses the same conversation. Vertex echoes back the same session
+        # name we sent; we also capture queryId in case a future /answer call
+        # wants to reference this turn.
+        session_info = result.get("sessionInfo", {}) or {}
+        returned_session = session_info.get("name", "")
+        if returned_session:
+            tool_context.state["vertex_search_session"] = returned_session
+        tool_context.state["vertex_search_last_query_id"] = session_info.get("queryId", "")
+        # &lt;&lt;&lt;
+
+        logger.debug("[ AI managed RAG Agent] Building search response with citations and summary")
+        response = prepare_search_response(query=query, raw_api_response=result)
+        logger.info("[ AI managed RAG Agent] For query [%s] Prepared search response: %s", query, response)
+        tool_context.state["natural_language_answer"] = response
+        return response
+
+    except Exception as e:
+        logger.error(
+            "[ AI managed RAG Agent] An unexpected error occurred in Vertex AI Discovery Engine Search API call. Exception Details",
+            e,
+        )
+        raise
+</code></pre>
+<h3 id="43populate_search_request_payloadacceptsessionaddpreamble">4.3 <code>populate_search_request_payload</code> — accept session, add preamble</h3>
+<p>Two edits: (a) the function now takes an optional <code>session_resource_name</code>, (b) the <code>model_prompt_spec</code> block that was commented out is enabled and filled in with a production-grade preamble.</p>
+<pre><code class="python language-python">def populate_search_request_payload(
+    query: str,
+    session_resource_name: str = "",
+) -&gt; Dict[str, Any]:
+    """Build the Discovery Engine API request payload from the search request.
+
+    Constructs a comprehensive payload with query expansion, spell correction,
+    content search specifications including snippets, extractive segments, and
+    summary generation settings.
+
+    Args:
+        query (str): The search query string
+        session_resource_name (str): Optional full Discovery Engine session
+            resource name. When provided, Vertex AI Search treats this turn as
+            part of a multi-turn conversation and performs server-side query
+            standing against prior turns in the same session.
+
+    Returns:
+        dict: Complete payload dictionary ready for the Discovery Engine API request,
+              including query, page size, language code, and various search specifications
+    """
+    payload = {
+        VertexAISearchPayloadFields.QUERY: query,
+        VertexAISearchPayloadFields.PAGE_SIZE: int(os.getenv("DISCOVERY_ENGINE_PAYLOAD_PAGE_SIZE", 3)),
+        VertexAISearchPayloadFields.LANGUAGE_CODE: os.getenv("DISCOVERY_ENGINE_DEFAULT_LANGUAGE_CODE", "en-US"),
+        # Only return documents whose status field equals "active".
+        # This is evaluated server-side so inactive docs don't consume top_k slots.
+        "filter": 'status: ANY("active")',
+        VertexAISearchPayloadFields.QUERY_EXPANSION_SPEC: {
+            VertexAISearchPayloadFields.CONDITION: VertexAISearchPayloadValues.AUTO,
+        },
+        VertexAISearchPayloadFields.SPELL_CORRECTION_SPEC: {
+            VertexAISearchPayloadFields.MODE: VertexAISearchPayloadValues.AUTO,
+        },
+        VertexAISearchPayloadFields.CONTENT_SEARCH_SPEC: {
+            VertexAISearchPayloadFields.SNIPPET_SPEC: {VertexAISearchPayloadFields.RETURN_SNIPPET: True},
+            VertexAISearchPayloadFields.EXTRACTIVE_CONTENT_SPEC: {
+                VertexAISearchPayloadFields.MAX_EXTRACTIVE_SEGMENT_COUNT: 2,
+                VertexAISearchPayloadFields.RETURN_EXTRACTIVE_SEGMENT_SCORE: True,
+            },
+            VertexAISearchPayloadFields.SUMMARY_SPEC: {
+                VertexAISearchPayloadFields.SUMMARY_RESULT_COUNT: 5,
+                VertexAISearchPayloadFields.INCLUDE_CITATIONS: True,
+                VertexAISearchPayloadFields.IGNORE_ADVERSARIAL_QUERY: True,
+                VertexAISearchPayloadFields.IGNORE_NON_SUMMARY_SEEKING_QUERY: True,
+                # &gt;&gt;&gt; ADDED: custom preamble — this is what fixes the "too verbose /
+                # sounds generic" complaint. It steers the *summary generator* model,
+                # which is separate from the ADK agent's own prompt in prompt.py.
+                "modelPromptSpec": {
+                    "preamble": (
+                        "You are a helpful assistant for question-answering tasks. "
+                        "Use the following retrieved documents to answer the user's "
+                        "question. Keep the response as short as possible — prefer "
+                        "one or two sentences. Answer strictly from the retrieved "
+                        "documents; if they do not contain the answer, say you "
+                        "could not find it rather than speculating. Do not include "
+                        "greetings, filler, or meta-commentary. When the question "
+                        "is a follow-up, interpret it in the context of the prior "
+                        "turns in this conversation."
+                    ),
+                },
+                # Use the stable summary model — switch to "preview" only for A/B tests.
+                "modelSpec": {"modelVersion": "stable"},
+                # &lt;&lt;&lt;
+            },
+        },
+    }
+
+    # &gt;&gt;&gt; ADDED: attach the session so Vertex AI Search performs query standing
+    # across turns. When this is empty we simply omit it, which preserves the
+    # current stateless behaviour as a safe fallback.
+    if session_resource_name:
+        payload["session"] = session_resource_name
+    # &lt;&lt;&lt;
+
+    return payload
+</code></pre>
+<blockquote>
+  <p><strong>Note on the <code>model_prompt_spec</code> key name.</strong> The existing code in image 4 uses the enum-style <code>VertexAISearchPayloadFields.*</code>. If your <code>VertexAISearchPayloadFields</code> class already has <code>MODEL_PROMPT_SPEC = "modelPromptSpec"</code> and <code>PREAMBLE = "preamble"</code>, swap the string literals above for the enum members to match the project's style. If it doesn't, add them to that enum in one place so the rest of the code stays consistent.</p>
+</blockquote>
+<hr />
+<h2 id="5howitworksendtoendafterthefix">5. How it works end-to-end after the fix</h2>
+<pre><code>Turn 1: user asks "Who makes DoorDash's delivery fleet?"
+  → ADK agent rewrites (nothing to rewrite yet) → calls tool with same query
+  → get_or_create_vertex_search_session: no cached session → POST /sessions → caches name
+  → populate_search_request_payload adds session + preamble
+  → POST /search returns summary + sessionInfo.name + sessionInfo.queryId
+  → tool_context.state["vertex_search_session"] = &lt;same name&gt;
+  → agent replies using the short, grounded summary
+
+Turn 2: user asks "And what about their menu management?"
+  → ADK agent (rule 7) rewrites → calls tool with "DoorDash menu management"
+  → get_or_create_vertex_search_session: cached session hit → reuses it
+  → Vertex AI Search sees prior turn "DoorDash delivery fleet" in the session,
+    applies query standing, ranks menu-management docs in the DoorDash context
+  → preamble keeps the summary tight and grounded
+  → agent replies coherently
+</code></pre>
+<p>The existing <code>filter='status: ANY("active")'</code>, the BigQuery log write via <code>log_vertex_ai_search_response</code>, the <code>additional_kwargs</code> payload, and the downstream <code>prepare_search_response</code> / <code>_extract_summary_text</code> / <code>_extract_search_results_artifacts</code> path all continue to run unchanged. The <code>prediction</code> table mentioned in the walkthrough continues to be populated the same way because <code>log_vertex_ai_search_response</code> is called on every turn exactly as before.</p>
+<hr />
+<h2 id="6optionalfollowupterraformonlyifyouwantthepreambletobethedefault">6. Optional follow-up (Terraform, only if you want the preamble to be the default)</h2>
+<p>If the team later decides the preamble should be the <strong>engine-wide default</strong> rather than per-request, add it to the <code>serving_config</code> resource in <code>discovery_engine.tf</code>:</p>
+<pre><code class="hcl language-hcl">resource "google_discovery_engine_search_engine" "genius_ai_discovery_engine" {
+  # ... existing config ...
+}
+
+# New: bake the preamble into the default serving config so every caller gets it.
+resource "google_discovery_engine_serving_config" "default" {
+  # ... identity / engine linkage ...
+
+  answer_generation_spec {
+    prompt_spec {
+      preamble = "You are a helpful assistant for question-answering tasks. Keep responses short and grounded in retrieved documents."
+    }
+    model_spec { model_version = "stable" }
+    include_citations = true
+  }
+}
+</code></pre>
+<p>For iteration 1 this is not required — the per-request <code>modelPromptSpec</code> in §4.3 is already sufficient and faster to ship.</p>
+<hr />
+<h2 id="7validationthetestcasesthewalkthroughaskedfor">7. Validation — the test cases the walkthrough asked for</h2>
+<p>Run these against the deployed app after the change:</p>
+<ol>
+<li><strong>Standalone question</strong> — <em>"How do I update my DoorDash menu?"</em> → expect a one- or two-sentence grounded answer with at least one citation.</li>
+<li><strong>Pronoun follow-up</strong> — <em>"What about pricing?"</em> → expect an answer scoped to DoorDash menu pricing (session-based query standing).</li>
+<li><strong>Narrowing follow-up</strong> — <em>"Just for the mobile app"</em> → expect the answer to narrow, not restart.</li>
+<li><strong>Comparison</strong> — <em>"How does that compare to Uber Eats?"</em> → expect a grounded comparison rather than a restart.</li>
+<li><strong>Ambiguous reference</strong> — <em>"Tell me more about the second one"</em> after a list → expect either a correctly-resolved rewrite (rule 7) or a short clarifying question (rule 8), never a hallucination.</li>
+<li><strong>New-topic reset</strong> — start a new ADK session → expect a brand-new Vertex session to be created and the cache to reset.</li>
+</ol>
+<p>All six should pass with <strong>only</strong> the three files in play: <code>prompt.py</code>, <code>rag_agent.py</code>, and (optionally) <code>discovery_engine.tf</code>. No change to <code>_extract_summary_text</code>, <code>_extract_search_results_artifacts</code>, <code>prepare_search_response</code>, <code>log_vertex_ai_search_response</code>, or the BigQuery <code>prediction</code> table is required.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
