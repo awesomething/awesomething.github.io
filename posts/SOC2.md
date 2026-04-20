@@ -1,5 +1,5 @@
 ---
-title: Autonomous Security Operations Agents
+title: Autonomous Security Operations FAQ
 date: 2022-12-22
 ---
 
