@@ -1038,6 +1038,202 @@ if __name__ == "__main__":
 
 ---
 
+I’d suggest positioning the Friday demo around **three messages**:
+
+1. **Semantic layer improves correctness**
+2. **Latency improves by reducing unnecessary work**
+3. **Metadata/feedback improves the model over time**
+
+### 1. Demo story: with vs without semantic layer
+
+Use two simple chatbots or notebooks side by side.
+
+Same user question:
+
+> “What are my net sales for March?”
+
+**Without semantic layer:**
+The model sees raw tables and guesses. It may write something like:
+
+```sql
+SELECT SUM(net_revenue)
+FROM transactions
+WHERE month = 'March';
+```
+
+This may be wrong because the business definition of net sales is not simply `net_revenue`.
+
+**With semantic layer:**
+The model has access to business definitions:
+
+```text
+Net Sales = Gross Sales - Refunds
+Gross Sales = SUM(transaction_amount)
+Refunds = SUM(refund_amount)
+```
+
+So it generates:
+
+```sql
+SELECT 
+  SUM(transaction_amount) - SUM(refund_amount) AS net_sales
+FROM sales
+WHERE month = 'March';
+```
+
+The point to land:
+
+> “The semantic layer prevents the model from guessing business logic. It gives the AI certified definitions, relationships, and terminology.”
+
+### 2. Keep the sample data tiny
+
+Use maybe three tables:
+
+**sales**
+
+| order_id | merchant_id | month | transaction_amount |
+| -------- | ----------- | ----- | ------------------ |
+| 1        | M001        | March | 100                |
+| 2        | M001        | March | 200                |
+
+**refunds**
+
+| refund_id | order_id | refund_amount |
+| --------- | -------- | ------------- |
+| R1        | 2        | 50            |
+
+**semantic_metrics**
+
+| metric_name | definition                              | sql_logic                                    |
+| ----------- | --------------------------------------- | -------------------------------------------- |
+| net_sales   | gross sales minus refunds               | SUM(transaction_amount) - SUM(refund_amount) |
+| gross_sales | total transaction amount before refunds | SUM(transaction_amount)                      |
+| refunds     | total refunded amount                   | SUM(refund_amount)                           |
+
+Then show:
+
+* Without semantic layer: answer = 300 or wrong metric
+* With semantic layer: answer = 250 and explains formula
+
+### 3. Latency demo: show before and after
+
+For latency, don’t try to solve everything in the demo. Show the **approach**.
+
+You can say  AI latency is improved by reducing how much the model has to reason over and by avoiding repeated work.
+
+The key latency levers are:
+
+| Area                 | Latency issue                      | Improvement                                         |
+| -------------------- | ---------------------------------- | --------------------------------------------------- |
+| Metadata retrieval   | Model sees too much schema/context | Retrieve only relevant domain metadata              |
+| Semantic definitions | Recomputed every time              | Cache metric definitions and joins                  |
+| SQL generation       | Large model does every step        | Use smaller/faster model for routing/classification |
+| Query execution      | Raw table scans                    | Use pre-aggregated tables/materialized views        |
+| Repeated questions   | Same or similar query reruns       | Cache previous SQL/results                          |
+| User experience      | User waits for full answer         | Stream intermediate response/status                 |
+
+Suggested demo flow:
+
+**Notebook A: unoptimized**
+
+```text
+User question
+→ Load all metadata
+→ Send large prompt to model
+→ Generate SQL
+→ Execute SQL
+→ Return answer
+```
+
+Show total latency: maybe 8–12 seconds.
+
+**Notebook B: optimized**
+
+```text
+User question
+→ Classify domain: Sales
+→ Retrieve only Sales semantic layer
+→ Reuse cached metric definition
+→ Generate SQL
+→ Execute optimized query
+→ Return answer
+```
+
+Show total latency: maybe 2–4 seconds.
+
+Even if the timing is simulated, make it clear it is illustrative.
+
+### 4. What to say when asked: “How are we improving latency?”
+
+Use this answer:
+
+> “We are improving latency by reducing the amount of context the model needs, routing the question to the right domain, caching reusable semantic definitions, using optimized SQL or pre-aggregated data where possible, and measuring latency at each step. The goal is not just to make the model faster, but to remove unnecessary work before the model is called.”
+
+Then add:
+
+> “The semantic layer also helps latency because the model does not need to infer business logic from raw tables every time. It can directly use certified definitions like net sales, refunds, active merchant, churn, or approval rate.”
+
+### 5. Metadata and model improvement story
+
+This is important. I would avoid saying “retrain” too strongly unless you actually plan to fine-tune. Say **metadata-driven improvement** first.
+
+The system should capture:
+
+* User question
+* Domain selected
+* Metric selected
+* Tables used
+* Generated SQL
+* Whether SQL executed successfully
+* Final answer
+* User feedback
+* Corrected query if the answer was wrong
+* Latency breakdown
+
+Then this becomes a feedback loop:
+
+```text
+User questions + generated SQL + feedback
+→ evaluation dataset
+→ better semantic definitions
+→ better examples/few-shot prompts
+→ better routing
+→ possible fine-tuning later
+```
+
+Suggested phrasing:
+
+> “We are building metadata not just as documentation, but as training and evaluation fuel. Every question, SQL query, selected metric, failure, correction, and latency measurement becomes part of the improvement loop. Initially this helps us improve prompts, semantic definitions, and routing. Over time, once we have enough high-quality examples, it can support fine-tuning or model retraining.”
+
+### 6. Recommended Friday demo structure
+
+I’d propose this sequence:
+
+**Part 1 — Business problem**
+“AI can answer data questions, but without business context it may use the wrong metric.”
+
+**Part 2 — Side-by-side demo**
+Ask: “What are my net sales?”
+Show wrong/ambiguous answer without semantic layer.
+Show correct answer with semantic layer.
+
+**Part 3 — Latency demo**
+Show baseline flow vs optimized flow.
+Break latency into retrieval, model, SQL, and response time.
+
+**Part 4 — Metadata improvement loop**
+Show how every interaction improves future accuracy and speed.
+
+**Part 5 — Close with roadmap**
+“Next we expand certified metrics, add feedback capture, benchmark latency, and prioritize high-value domains.”
+
+### 7. Strong closing message
+
+Use this:
+
+> “The semantic layer improves accuracy because the AI uses certified business definitions instead of guessing. The latency work improves speed because we reduce unnecessary context, cache what is reusable, and route questions more intelligently. The metadata layer then creates a feedback loop so  AI gets better over time.”
+
+
 ## 9. Reference Links
 
 ### Core Repos
