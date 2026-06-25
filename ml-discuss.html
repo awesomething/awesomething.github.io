@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>ML Discuss</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, January 01, 2025">Wed, January 01, 2025</time>
+        <h1 class="mar-b-7">ML Discuss</h1>
+    </header>
+    <h2 id="approaches">Approaches</h2>
+<p>Let's frame Sales Forecasting as Problem #1, but the "first approach" should not stop there. Based on the conversation, the broader Phase 1 approach could be:</p>
+<blockquote>
+  <p>Run scheduled analytical checks across sales, labor, tickets, dayparts, item performance, and channels; compare results against expected baselines; then surface meaningful exceptions as alerts or dashboard insights.</p>
+</blockquote>
+<p>So instead of building only a forecast engine, you build an <strong>Insight + Alerting Foundation</strong>.</p>
+<h3 id="firstapproachproblemsbesidessalesforecasting">First Approach Problems Besides Sales Forecasting</h3>
+<h4 id="1salesforecasting">1. Sales Forecasting</h4>
+<p><strong>Problem:</strong> Can we predict expected sales for a vendor/location for a future day or period?</p>
+<p><strong>Example:</strong> "Expected sales for Wednesday are $8,400 based on prior Wednesdays, seasonality, holidays, and recent trends."</p>
+<p>This is the core forecasting problem.</p>
+<h4 id="2laborefficiencystaffingvariance">2. Labor Efficiency / Staffing Variance</h4>
+<p><strong>Problem:</strong> Are labor hours aligned with expected or actual sales volume?</p>
+<p>This is important because the owner-facing queries already include staffing and labor hours.</p>
+<p><strong>Example insight:</strong> Labor hours were 12% higher than expected yesterday while sales were 8% below expected.</p>
+<p>This could identify overstaffing, understaffing, or inefficient scheduling.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Labor hours</li>
+<li>Sales</li>
+<li>Ticket count</li>
+<li>Daypart</li>
+<li>Business type</li>
+<li>Historical labor-to-sales ratio</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Labor cost as % of sales</li>
+<li>Sales per labor hour</li>
+<li>Tickets per labor hour</li>
+<li>Labor hours by daypart</li>
+</ul>
+<p><strong>Why this belongs in Phase 1:</strong> It uses internal data, creates clear business value, and does not require external APIs.</p>
+<h4 id="3daypartperformanceanalysis">3. Daypart Performance Analysis</h4>
+<p><strong>Problem:</strong> Which part of the day is driving the sales change?</p>
+<p>Dayparts are configurable time windows like breakfast, lunch, dinner, late night, etc.</p>
+<p><strong>Example insight:</strong> Lunch sales were down 18% compared to the prior four Wednesdays, while dinner was normal.</p>
+<p>This is more actionable than saying total sales were down.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Transaction timestamp</li>
+<li>Vendor-configured dayparts</li>
+<li>Sales</li>
+<li>Ticket count</li>
+<li>Average ticket size</li>
+<li>Order channel</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Sales by daypart</li>
+<li>Tickets by daypart</li>
+<li>Average ticket size by daypart</li>
+<li>Labor hours by daypart</li>
+<li>Item performance by daypart</li>
+</ul>
+<p><strong>Why this belongs in Phase 1:</strong> It helps explain where the issue happened without requiring advanced forecasting.</p>
+<h4 id="4labortodaypartalignment">4. Labor-to-Daypart Alignment</h4>
+<p><strong>Problem:</strong> Was staffing aligned with actual demand during each daypart?</p>
+<p>This combines the labor conversation with daypart analysis.</p>
+<p><strong>Example insight:</strong> Breakfast had 22% fewer tickets than expected, but labor hours were unchanged from the normal Wednesday average.</p>
+<p>Or: Dinner sales exceeded expectations by 15%, but labor coverage was 10% below normal.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Labor hours by time window</li>
+<li>Sales by daypart</li>
+<li>Ticket count by daypart</li>
+<li>Historical averages</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Sales per labor hour by daypart</li>
+<li>Tickets per labor hour by daypart</li>
+<li>Labor variance vs demand variance</li>
+</ul>
+<p><strong>Why this is useful:</strong> It gives the owner a specific operational problem, not just a sales observation.</p>
+<h4 id="5orderchannelmixanalysis">5. Order Channel Mix Analysis</h4>
+<p><strong>Problem:</strong> Did sales shift between in-store, online, DoorDash, Uber Eats, or other channels?</p>
+<p>This came up directly in the conversation. You likely have this data somewhere already.</p>
+<p><strong>Example insight:</strong> Total sales were flat, but third-party delivery increased 24% while in-store sales declined 15%.</p>
+<p>That changes the interpretation completely.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Order channel</li>
+<li>Sales</li>
+<li>Ticket count</li>
+<li>Average ticket size</li>
+<li>Daypart</li>
+<li>Vendor/location</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Sales by channel</li>
+<li>Tickets by channel</li>
+<li>Average ticket size by channel</li>
+<li>Channel share %</li>
+<li>Channel growth/decline</li>
+</ul>
+<p><strong>Why this belongs in Phase 1:</strong> It is internal, likely already captured, and can explain sales movement better than total revenue alone.</p>
+<h4 id="6ticketcountvsaverageticketsizeanalysis">6. Ticket Count vs. Average Ticket Size Analysis</h4>
+<p><strong>Problem:</strong> Did revenue change because fewer people ordered, or because people spent more or less per order?</p>
+<p><strong>Example insight:</strong> Revenue was up 6%, but ticket count was down 11%. The increase was driven by higher average ticket size, not more volume.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Ticket count</li>
+<li>Ticket total</li>
+<li>Sales</li>
+<li>Average ticket size</li>
+<li>Daypart</li>
+<li>Channel</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Tickets</li>
+<li>Average ticket size</li>
+<li>Revenue per ticket</li>
+<li>Ticket count variance</li>
+<li>Ticket size variance</li>
+</ul>
+<p><strong>Why this matters:</strong> Sales alone can hide the real issue. A business may be making more revenue but serving fewer customers.</p>
+<h4 id="7itemlevelperformancedetection">7. Item-Level Performance Detection</h4>
+<p><strong>Problem:</strong> Which menu items are meaningfully up or down?</p>
+<p><strong>Example insight:</strong> Burger sales were down 28% yesterday compared to the normal Wednesday dinner average.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Item sales</li>
+<li>Quantity sold</li>
+<li>Revenue by item</li>
+<li>Daypart</li>
+<li>Channel</li>
+<li>Historical item performance</li>
+</ul>
+<p><strong>Possible metrics:</strong></p>
+<ul>
+<li>Item quantity sold</li>
+<li>Item revenue</li>
+<li>Item share of sales</li>
+<li>Item trend vs baseline</li>
+</ul>
+<p><strong>Phase 1 caution:</strong> This is useful, but only if item naming and mapping are reliable. If item data is messy, this may need to be limited to top-selling items first.</p>
+<h4 id="8ingredientorplatelevelmonitoring">8. Ingredient or Plate-Level Monitoring</h4>
+<p><strong>Problem:</strong> Did usage or sales of a key ingredient/plate deviate from normal?</p>
+<p>This was mentioned in the discussion, but it may be harder than item-level analysis.</p>
+<p><strong>Example insight:</strong> Chicken-based menu items were down 19% yesterday compared to the recent Wednesday average.</p>
+<p><strong>Inputs:</strong></p>
+<ul>
+<li>Menu item sales</li>
+<li>Ingredient mapping</li>
+<li>Plate/category mapping</li>
+<li>Historical usage or sales</li>
+</ul>
+<p><strong>Phase 1 caution:</strong> Only include this if the ingredient-to-item mapping already exists. Otherwise, this becomes a data normalization project.</p>
+<h4 id="9scheduledqueryautomationinsightdetection">9. Scheduled Query Automation / Insight Detection</h4>
+<p>This may actually be the best way to describe the first approach.</p>
+<p><strong>Problem:</strong> Can we automate known business questions and run them on a schedule?</p>
+<p>Instead of asking an LLM to freely analyze everything, define a set of trusted analytical checks.</p>
+<p><strong>Example scheduled checks:</strong></p>
+<ul>
+<li>Was yesterday's sales materially above or below expected?</li>
+<li>Which daypart caused the variance?</li>
+<li>Did labor hours align with sales?</li>
+<li>Did ticket count drop?</li>
+<li>Did average ticket size increase or decrease?</li>
+<li>Did sales shift by order channel?</li>
+<li>Did any top items significantly underperform?</li>
+<li>Were there unusual staffing patterns?</li>
+</ul>
+<p><strong>Output:</strong></p>
+<p>Three alerts generated for Wednesday morning:</p>
+<ul>
+<li>Tuesday sales were 14% below expected.</li>
+<li>Lunch ticket count was down 21%.</li>
+<li>Labor hours remained flat despite lower demand.</li>
+</ul>
+<p>This keeps Phase 1 practical and avoids becoming an open-ended analytics science project.</p>
+<h3 id="recommendedphase1firstapproachlist">Recommended Phase 1 "First Approach" List</h3>
+<p>I would take this to Sai as a focused set of problems:</p>
+<p>| Priority | Problem | Phase 1 Fit |
+|---|---|---|
+| 1 | Sales forecasting | Yes |
+| 2 | Labor efficiency / staffing variance | Yes |
+| 3 | Daypart performance analysis | Yes |
+| 4 | Ticket count vs average ticket size | Yes |
+| 5 | Order channel mix analysis | Yes, if data is available |
+| 6 | Scheduled insight / alert generation | Yes |
+| 7 | Item-level performance detection | Maybe |
+| 8 | Ingredient / plate monitoring | Maybe later |
+| 9 | Weather impact | Phase 2 |
+| 10 | Local events / sports / road closures | Phase 2 |</p>
+<h3 id="bestwaytopositionit">Best Way to Position It</h3>
+<p>I would not say Phase 1 is only "forecasting."</p>
+<p>I would say:</p>
+<blockquote>
+  <p>Phase 1 should build an internal-data-driven insight engine that combines simple forecasting, variance detection, labor analysis, daypart breakdowns, ticket analytics, and channel mix analysis. The system should run scheduled checks, compare actual performance against expected baselines, and surface meaningful alerts to the owner dashboard.</p>
+</blockquote>
+<p>That gives you something more useful than a generic analytics dashboard, but still keeps the scope realistic.</p>
+<h3 id="suggestedfirstapproachproblemswording">Suggested "First Approach Problems" Wording</h3>
+<p><strong>First Approach Problems</strong></p>
+<ol>
+<li><strong>Sales Forecasting</strong> — Predict expected sales for a vendor/location using historical sales, day of week, seasonality, holidays, and recent trends.</li>
+<li><strong>Labor Efficiency and Staffing Variance</strong> — Identify whether labor hours were aligned with sales volume, ticket count, and daypart demand. Surface cases where labor appears high relative to sales or low relative to demand.</li>
+<li><strong>Daypart Performance Analysis</strong> — Break sales and ticket activity into configured vendor dayparts such as breakfast, lunch, dinner, and late night. Identify which daypart contributed most to overperformance or underperformance.</li>
+<li><strong>Ticket Count vs. Average Ticket Size Analysis</strong> — Determine whether sales changes were caused by changes in transaction volume, average ticket size, or both.</li>
+<li><strong>Order Channel Mix Analysis</strong> — Analyze sales and ticket trends across channels such as in-store, online, DoorDash, Uber Eats, and other ordering sources where available.</li>
+<li><strong>Scheduled Insight and Alert Generation</strong> — Run predefined analytical checks on a scheduled basis and generate alerts when performance materially deviates from expected baselines.</li>
+<li><strong>Item-Level Performance Detection</strong> — Identify top menu items that are significantly overperforming or underperforming compared to historical expectations.</li>
+<li><strong>Ingredient or Plate-Level Monitoring</strong> — Where reliable item-to-ingredient or plate mapping exists, detect unusual changes in ingredient or plate-level sales patterns.</li>
+</ol>
+<h3 id="recommendedphase1focus">Recommended Phase 1 Focus</h3>
+<p>Phase 1 should focus on internal data sources first: sales, tickets, labor, dayparts, order channels, holidays, and item performance. External signals such as weather, sports, local events, road closures, and supply chain disruptions should be treated as future enhancements unless reliable data already exists internally.</p>
+<h2 id="details">Details</h2>
+<p>Based on the discussion, I'd recommend reframing the epic around building a reliable sales forecasting foundation first, then layering external signals later. The team is correctly identifying that some of the proposed Phase 1 items are disproportionately expensive relative to their value.</p>
+<h3 id="whatiheardintheconversation">What I Heard in the Conversation</h3>
+<p>There are really two categories of inputs:</p>
+<p><strong>1. Internal signals (high value, low complexity)</strong></p>
+<ul>
+<li>Historical sales</li>
+<li>Day of week</li>
+<li>Hour of day</li>
+<li>Business type (pub, breakfast restaurant, fine dining, etc.)</li>
+<li>Region/location</li>
+<li>Holidays</li>
+<li>Average ticket size</li>
+<li>Labor costs</li>
+<li>Operational metrics</li>
+</ul>
+<p><strong>2. External signals (potentially valuable, high complexity)</strong></p>
+<ul>
+<li>Weather APIs</li>
+<li>Sporting events</li>
+<li>Road closures</li>
+<li>Competitor activity</li>
+<li>Local events</li>
+</ul>
+<p>The concern raised is valid: weather, sports schedules, and local events are all highly location-specific and require significant data engineering before they add meaningful predictive power.</p>
+<h3 id="firstclarifyticket">First: Clarify "Ticket"</h3>
+<p>In restaurant and hospitality systems, a ticket almost always means an order/check/transaction.</p>
+<p><strong>Examples:</strong></p>
+<p>| Metric | Meaning |
+|---|---|
+| Ticket count | Number of orders |
+| Average ticket size | Average revenue per order |
+| Ticket total | Dollar amount of a specific order |
+| Covers | Number of guests served |</p>
+<p>A table of four people could generate:</p>
+<ul>
+<li>One ticket ($120)</li>
+<li>Two tickets ($60 each)</li>
+<li>Four tickets ($30 each)</li>
+</ul>
+<p>So average ticket size does not directly indicate guest count.</p>
+<p>If guest count matters, restaurants usually track:</p>
+<ul>
+<li>Covers</li>
+<li>Party size</li>
+<li>Guests served</li>
+</ul>
+<p>The team should verify exactly what the source system means by "ticket."</p>
+<h3 id="recommendedv1scope">Recommended V1 Scope</h3>
+<p>I would narrow the epic to five core systems:</p>
+<h4 id="1salesforecastingengine">1. Sales Forecasting Engine</h4>
+<p>Forecast:</p>
+<ul>
+<li>Daily sales</li>
+<li>Weekly sales</li>
+<li>Hourly sales (if data supports it)</li>
+</ul>
+<p>Inputs:</p>
+<ul>
+<li>Historical sales</li>
+<li>Day of week</li>
+<li>Month</li>
+<li>Holiday flags</li>
+<li>Business type</li>
+<li>Region</li>
+</ul>
+<h4 id="2seasonalitydetection">2. Seasonality Detection</h4>
+<p>Automatically identify patterns such as:</p>
+<ul>
+<li>Fridays +18%</li>
+<li>Saturdays +32%</li>
+<li>Memorial Day weekend +25%</li>
+<li>January slump -12%</li>
+</ul>
+<p>This is actionable and explainable.</p>
+<h4 id="3businesssegmentationlayer">3. Business Segmentation Layer</h4>
+<p>Group customers by:</p>
+<ul>
+<li>Restaurant type</li>
+<li>Region</li>
+<li>Operating hours</li>
+<li>Service style</li>
+</ul>
+<p>Examples:</p>
+<ul>
+<li>Pacific Northwest Pub — strong weekend sales, strong evening sales</li>
+<li>Breakfast Cafe — morning concentration, weekday traffic</li>
+</ul>
+<p>This allows models to share learnings across similar businesses.</p>
+<h4 id="4ticketanalytics">4. Ticket Analytics</h4>
+<p>Track:</p>
+<ul>
+<li>Ticket count</li>
+<li>Average ticket size</li>
+<li>Revenue per ticket</li>
+<li>Ticket growth trends</li>
+</ul>
+<p>This often explains sales changes better than raw revenue.</p>
+<p><strong>Example:</strong></p>
+<p>| Month | Tickets | Avg Ticket | Revenue |
+|---|---|---|---|
+| Jan | 1,000 | $20 | $20,000 |
+| Feb | 900 | $25 | $22,500 |</p>
+<p>Sales increased despite fewer orders.</p>
+<h4 id="5explainabilitylayer">5. Explainability Layer</h4>
+<p>Instead of simply saying:</p>
+<blockquote>
+  <p>Forecast = $12,000</p>
+</blockquote>
+<p>Provide:</p>
+<blockquote>
+  <p>Expected sales are 11% above normal because:</p>
+  <ul>
+  <li>Friday effect (+7%)</li>
+  <li>Holiday weekend (+3%)</li>
+  <li>Seasonal trend (+1%)</li>
+  </ul>
+</blockquote>
+<p>Business users trust this much more.</p>
+<h3 id="movetophase2">Move to Phase 2</h3>
+<p>I'd push all of these out:</p>
+<p><strong>Weather</strong>
+Reason: Location-dependent, data quality issues, complex feature engineering. Unless you're forecasting for a single chain, weather is expensive.</p>
+<p><strong>Sports Schedules</strong>
+Reason: Only impacts businesses near venues, requires venue mapping, highly bespoke. Great enhancement later, not foundational.</p>
+<p><strong>Road Closures</strong>
+Reason: Hard to source consistently, sparse impact.</p>
+<p><strong>Competitor Activity</strong>
+Reason: Difficult to obtain reliable data, difficult to quantify.</p>
+<p><strong>Local Events</strong>
+Reason: Valuable but operationally expensive, event coverage varies widely by market.</p>
+<h3 id="mysuggestedepicobjective">My Suggested Epic Objective</h3>
+<p>Instead of:</p>
+<blockquote>
+  <p>"Build a forecasting platform using 9 different prediction approaches"</p>
+</blockquote>
+<p>Use:</p>
+<blockquote>
+  <p>"Build an explainable sales forecasting platform that predicts revenue, ticket volume, and ticket size using internal operational data and seasonality patterns."</p>
+</blockquote>
+<p>That scope is achievable by October, produces business value quickly, and creates a foundation where weather, sports, and event APIs can later be added as incremental signal sources rather than core dependencies.</p>
+<h2 id="followupquestions">Follow-Up Questions</h2>
+<h3 id="forecastingvspreviousdayanalytics">Forecasting vs. Previous-Day Analytics</h3>
+<ul>
+<li>Are we trying to forecast future sales, explain yesterday's performance, or support both?</li>
+<li>For Phase 1, should the primary forecast be daily, with hourly or daypart analysis treated as supporting detail?</li>
+<li>When a user logs in Wednesday morning, should the system show: Tuesday performance analysis, Wednesday forecast, or both?</li>
+<li>Is the "three alerts when the user logs in" experience meant to be based on actuals from the prior day or forecasted risk for the current/future day?</li>
+<li>Should we rename part of this epic from "forecasting" to "sales performance insights" if the first version is primarily retrospective?</li>
+</ul>
+<h3 id="timegrainanddaypartlogic">Time Grain and Daypart Logic</h3>
+<ul>
+<li>What is the minimum viable time grain for Phase 1: daily, daypart, or hourly?</li>
+<li>Do we have reliable timestamped transaction data to support morning/afternoon/evening analysis?</li>
+<li>How should dayparts be defined across different business types?</li>
+<li>Breakfast</li>
+<li>Lunch</li>
+<li>Dinner</li>
+<li>Late night</li>
+<li>Should dayparts be configurable by business type or standardized across all customers?</li>
+<li>Do we need same-day intra-day forecasting, such as "based on sales through 10 a.m., today is trending 12% below expected"?</li>
+</ul>
+<h3 id="alertingandthresholds">Alerting and Thresholds</h3>
+<ul>
+<li>What types of alerts should be generated in Phase 1?</li>
+<li>Overall sales decline</li>
+<li>Item-level decline</li>
+<li>Ingredient usage anomaly</li>
+<li>Order channel shift</li>
+<li>Ticket count decline</li>
+<li>Average ticket size change</li>
+<li>Should alert thresholds be fixed, like 10%, or adaptive based on historical volatility?</li>
+<li>Should we compare against a rolling average, an exponential moving average, the same weekday average, or a true forecast baseline?</li>
+<li>What is the expected sensitivity of alerts?</li>
+<li>Fewer, higher-confidence alerts</li>
+<li>More alerts with possible noise</li>
+<li>Should users be able to configure alert thresholds?</li>
+</ul>
+<h3 id="baselineandforecastingmethod">Baseline and Forecasting Method</h3>
+<ul>
+<li>What should the baseline be for comparison?</li>
+<li>Same day last week</li>
+<li>Four-week rolling average</li>
+<li>Exponential moving average</li>
+<li>Same weekday over prior N weeks</li>
+<li>Forecasted expected value</li>
+<li>Are we comfortable starting with an exponential moving average or similar lightweight model before introducing a more advanced forecasting model?</li>
+<li>What level of lag is acceptable in the baseline calculation?</li>
+<li>Should the model account for holidays and observed holidays in Phase 1?</li>
+<li>Should CPI/economic data be included now if those models already exist internally, or deferred until the core sales baseline is stable?</li>
+</ul>
+<h3 id="scopeofforecasting">Scope of "Forecasting"</h3>
+<ul>
+<li>What does "forecasting" mean for this epic?</li>
+<li>Predicting tomorrow's sales</li>
+<li>Predicting the rest of today</li>
+<li>Predicting next week</li>
+<li>Detecting when yesterday deviated from expectation</li>
+<li>What forecast horizon matters most to the business user?</li>
+<li>Remainder of day</li>
+<li>Tomorrow</li>
+<li>Next 7 days</li>
+<li>Next 30 days</li>
+<li>Should Phase 1 include at least one forward-looking forecast so the product does not become only an analytics dashboard?</li>
+<li>What is the minimum forecast output that would feel valuable to customers?</li>
+<li>Should we separate the work into: performance analysis, anomaly detection, forecasting, recommendations?</li>
+</ul>
+<h3 id="userexperience">User Experience</h3>
+<ul>
+<li>Who is the primary user for the alert experience?</li>
+<li>Owner</li>
+<li>Store manager</li>
+<li>Regional manager</li>
+<li>Operations analyst</li>
+<li>What decisions should the user be able to make from the alert?</li>
+<li>Adjust staffing</li>
+<li>Review menu performance</li>
+<li>Check inventory</li>
+<li>Investigate channel issues</li>
+<li>Plan promotions</li>
+<li>What should an alert include besides the metric change?</li>
+<li>What changed</li>
+<li>Compared to what</li>
+<li>Likely reason</li>
+<li>Recommended action</li>
+<li>Should the system provide an explanation for each alert?</li>
+<li>Should alerts be ranked by severity or business impact?</li>
+</ul>
+<h3 id="itemingredientandmenulevelanalysis">Item, Ingredient, and Menu-Level Analysis</h3>
+<ul>
+<li>What item-level data is available today?</li>
+<li>Is ingredient-level tracking reliable enough to support alerts?</li>
+<li>How do we map ingredients to menu items or plates?</li>
+<li>Are item names standardized across locations, or will we need normalization?</li>
+<li>Should item-level performance be Phase 1, or should we start with sales, ticket count, and average ticket size?</li>
+</ul>
+<h3 id="orderchannelanalysis">Order Channel Analysis</h3>
+<ul>
+<li>Which order channels are available in the source data?</li>
+<li>In-store</li>
+<li>Online ordering</li>
+<li>DoorDash</li>
+<li>Uber Eats</li>
+<li>Grubhub</li>
+<li>Catering</li>
+<li>Are third-party delivery channels consistently labeled across customers?</li>
+<li>Should channel mix changes be part of Phase 1 alerts?</li>
+<li>Can we distinguish between lost demand and channel shift?</li>
+<li>Should channel-level forecasting be separate from total sales forecasting?</li>
+</ul>
+<h3 id="externaldatasignals">External Data Signals</h3>
+<ul>
+<li>Are weather, sports, and local events truly Phase 1 requirements, or optional future enhancements?</li>
+<li>Do we already have a weather provider in use anywhere in the company?</li>
+<li>If weather is included later, do we need current weather, historical weather, forecasted weather, or all three?</li>
+<li>Do we have location/address data accurate enough to map businesses to weather, venues, and local events?</li>
+<li>Without physical addresses, how would we determine whether a sports event, road closure, or local event is relevant to a customer?</li>
+</ul>
+<h3 id="localeventsandsports">Local Events and Sports</h3>
+<ul>
+<li>Should local events only apply to businesses with known proximity to venues?</li>
+<li>Do we need a flag for businesses that are event-sensitive, such as food trucks or stadium-adjacent restaurants?</li>
+<li>Do we have a way to identify food trucks today?</li>
+<li>Should event-based forecasting be excluded until we have location enrichment?</li>
+<li>What is the minimum data needed before sports or local events become feasible?</li>
+</ul>
+<h3 id="customerandlocationdata">Customer and Location Data</h3>
+<ul>
+<li>Do we have customer location data at all?</li>
+<li>Do we have store-level address, city, ZIP, latitude/longitude, or only merchant-level information?</li>
+<li>Is location data clean and standardized?</li>
+<li>Can one customer have multiple locations with different sales patterns?</li>
+<li>Do we know the business type for each customer, or does that need to be inferred?</li>
+</ul>
+<h3 id="phase1boundary">Phase 1 Boundary</h3>
+<ul>
+<li>What is the real Phase 1 deliverable: alerting dashboard, previous-day performance analysis, daily sales forecast, or all of the above?</li>
+<li>What should explicitly be out of scope for Phase 1?</li>
+<li>What can we build now that creates a foundation for more advanced forecasting later?</li>
+<li>Which capabilities are required for the October target, and which are stretch goals?</li>
+<li>What would make this feel like a forecasting product rather than just business analytics?</li>
+</ul>
+<h3 id="myrecommendedkeyquestionstoaskfirst">My Recommended Key Questions to Ask First</h3>
+<p>The most important ones are:</p>
+<ol>
+<li>Are we forecasting the future, explaining the past, or doing both?</li>
+<li>Should Phase 1 be daily forecasting first, with daypart/hourly analysis later?</li>
+<li>When the user logs in, should they see yesterday's anomalies, today's forecast, or both?</li>
+<li>What is the baseline comparison: rolling average, exponential moving average, same weekday history, or forecasted expected value?</li>
+<li>Do we have store-level location/address data?</li>
+<li>Are weather, sports, and local events confirmed out of Phase 1?</li>
+<li>What data do we actually have for ticket count, average ticket size, item sales, ingredients, and order channels?</li>
+<li>What decision should the user make after seeing an alert?</li>
+</ol>
+<p>My strongest recommendation would be to force a distinction between forecasting and retrospective anomaly detection. Right now, the conversation is blending the two, and that could create scope confusion.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

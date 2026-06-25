@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Comp</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, January 12, 2024">Fri, January 12, 2024</time>
+        <h1 class="mar-b-7">Comp</h1>
+    </header>
+    <p># Complex Agent — Tool Architecture Analysis &amp; Gaps</p>
+<p>## Foundation: What Already Exists</p>
+<p>`complex_agent.py` has a working semantic layer (`_SEMANTIC_LAYER`, lines 52–169) and three semantic discovery tools that directly match what the PDF describes:</p>
+<p>| PDF Recommendation | Existing in Codebase |<br />
+|---|---|<br />
+| `semantic_search(query)` | `semantic_search_on_semantic_layer(query)` — keyword scoring against the layer |<br />
+| `get_column_metadata(tables)` | `retrieve_semantic_layer_details(table_name)` — returns full column docs |<br />
+| `find_relevant_tables(query)` | Embedded in `semantic_search_on_semantic_layer` — returns `recommended_tables` |<br />
+| Measures tool | `metric_formulas` block inside each table entry (e.g., `total_revenue`, `labor_cost_ratio`) |<br />
+| Business rules tool | `common_filters` inside each table entry (partial — filter patterns only) |<br />
+| Join metadata | `join_keys` block inside each table entry (1-hop only) |</p>
+<p>The `_SEMANTIC_LAYER` dict **is** the semantic layer. It's just not yet broken out into focused tools.</p>
+<p>---</p>
+<p>## What's MISSING (Gaps to Fill)</p>
+<p>### 1. No `gather_complex_context(query)` Composite Tool<br />
+The PDF's core recommendation. Currently the agent calls `semantic_search` → `retrieve_semantic_layer_details` → `get_table_info` **sequentially**. There is no single tool that fans out **concurrently** to get semantic matches + measures + business rules + joins in one call.</p>
+<p>**What it should return:**<br />
+- semantic matches<br />
+- candidate tables<br />
+- candidate measures<br />
+- business rules<br />
+- possible joins (if table set is obvious)<br />
+- confidence / similarity metadata</p>
+<p>### 2. No `get_measure_definition()` Tool<br />
+Measures are buried <em>*inside*</em> `retrieve_semantic_layer_details()` alongside 20+ column docs. The agent cannot ask "what is labor cost ratio?" without loading the entire table's context.</p>
+<p>The `metric_formulas` dict is the data — it just needs its own tool surface.</p>
+<p>**Examples of measures that need to be independently queryable:**<br />
+- `net_sales`<br />
+- `gross_sales`<br />
+- `labor_cost_ratio`<br />
+- `avg_order_value`<br />
+- `covers_per_seat`</p>
+<p>### 3. No `get_business_rules()` Tool — BIGGEST GAP<br />
+`common_filters` covers filter patterns only (e.g., `{"channel": "filters={'fulfillment_type': 'delivery'}"}`). There is **nothing** encoding actual domain rules like:</p>
+<p>- "voided tickets are excluded from revenue"<br />
+- "fiscal week starts Monday"<br />
+- "active location = has orders in last 30 days"<br />
+- "refunds are netted out of revenue"<br />
+- "delivery orders exclude the platform fee"</p>
+<p><em>> Wrong SQL outputs are often **business-logic errors, not syntax errors.** This is the most impactful missing piece.</em></p>
+<p>### 4. No `find_join_paths(tables)` Tool<br />
+`join_keys` only has direct 1-hop joins (e.g., `orders → locations` on `location_id`). Multi-hop is not modeled.</p>
+<p>The `staff_schedule → orders` join is documented as free text:<br />
+```<br />
+"location_id (match schedule_date ≈ order_date for the same day)"<br />
+```<br />
+This is not queryable. There is no confidence score or "indirect join path" output.</p>
+<p>**What this tool should return:**<br />
+- known join keys<br />
+- confidence / source<br />
+- possible join path if indirect<br />
+- surface missing join metadata clearly</p>
+<p>### 5. Semantic Search is Keyword Scoring, Not Vector Similarity<br />
+`semantic_search_on_semantic_layer` does simple word matching:<br />
+- +2 per word hit in description<br />
+- +3 for metric key match<br />
+- +1 for column match</p>
+<p>Rephrased follow-up questions ("what about last week?") will miss unless exact words overlap. This is the **follow-up question context loss** problem described in the PDF.</p>
+<p>### 6. No `if data not found → fallback` Logic<br />
+When similarity search finds nothing, the agent currently returns all 5 tables as a fallback (line 229). There is no structured path to:</p>
+<p>1. Rephrase the query slightly<br />
+2. Retry similarity search<br />
+3. Surface a clarification prompt to the user</p>
+<p>---</p>
+<p>## Recommended Tool Set (from PDF)</p>
+<p>### Minimum tool set for the complex agent:</p>
+<p>```<br />
+gather_complex_context(query, conversation_context=None)<br />
+  → runs concurrently inside:<br />
+      - semantic similarity lookup<br />
+      - measures lookup<br />
+      - business rules lookup<br />
+      - maybe table lookup</p>
+<p>find_join_paths(tables)<br />
+expand_measure_definition(name)<br />
+get_rule_details(rule_name)<br />
+```</p>
+<p>### Recommended agent flow:</p>
+<p>1. Rewrite current turn into a **standalone question** if needed<br />
+2. Run **similarity search** against the semantic layer<br />
+3. Pull relevant **measure definitions**<br />
+4. Pull relevant **business rules**<br />
+5. Find tables / columns / joins<br />
+6. Construct SQL plan<br />
+7. Validate against gathered semantic context</p>
+<p>---</p>
+<p>## Where to Build From</p>
+<p>| What to build | Build from |<br />
+|---|---|<br />
+| `gather_complex_context()` | Wrap existing `semantic_search_on_semantic_layer` + new concurrent lookups |<br />
+| `get_measure_definition()` | Extract `metric_formulas` from `_SEMANTIC_LAYER` into own tool |<br />
+| `get_business_rules()` | Add `business_rules` section to `_SEMANTIC_LAYER`, expose as tool |<br />
+| `find_join_paths()` | Extract + expand `join_keys` from `_SEMANTIC_LAYER`, add multi-hop + confidence |<br />
+| Semantic search upgrade | Replace keyword scoring with vector embeddings |</p>
+<p>**Core file:** `complex_agent.py:52–289`<br />
+**Data model to extend:** `_SEMANTIC_LAYER` dict — add `business_rules` section per table<br />
+**Pattern:** Not a rewrite — a refactor + gap-fill</p>
+<p>---</p>
+<p>## Key Principle (from PDF)</p>
+<p><em>> Use the **same semantic layer** as the source, but expose it through focused tools:</em><br />
+<em>> - one tool for similarity retrieval</em><br />
+<em>> - one for measures</em><br />
+<em>> - one for business rules</em><br />
+<em>> - one for joins</em><br />
+<em>></em><br />
+<em>> That way the complex agent can retrieve **only what it needs at each step.**</em></p>
+<p>Thread pool / concurrency should happen **inside tool execution**, not as hidden prefetch before the agent runs.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
