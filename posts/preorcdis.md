@@ -1086,3 +1086,65 @@ A practical sequence would be:
 5. Add parallel execution for low-risk tasks.
 6. Introduce smart-operation detection.
 7. Finalize the MCP hosting model after load and security testing.
+
+The discussion reinforces the recommendation, with one important clarification: **do not describe or implement the preprocessing layer as a full agent unless it performs genuinely agentic work.**
+
+## Concise Summary
+
+The team agrees that preprocessing capabilities are necessary, including:
+
+* Language and entity detection
+* User-preference loading
+* Location and data-scope validation
+* Metadata enrichment
+* Clarification and human-feedback handling
+* Prevention of invalid or unsafe downstream requests
+
+The disagreement is primarily about implementation and terminology.
+
+A full pre-orchestrator agent was challenged because most of these tasks are deterministic preprocessing rather than specialized reasoning. Making it an agent would add unnecessary routing, model calls, latency, complexity, and behavior that differs from the system’s other agents.
+
+The preferred approach is therefore:
+
+1. Use direct application logic for simple deterministic operations.
+2. Use Python tools or services for structured extraction and validation.
+3. Use an LLM only when interpretation is genuinely ambiguous.
+4. Keep the existing orchestrator as the sole routing agent.
+5. Run independent preprocessing checks in parallel where possible.
+6. Treat preprocessing as a bounded request-readiness layer, not an autonomous agent.
+
+## Does the Previous Recommendation Still Stand?
+
+**Yes. It still stands and is more strongly supported by this discussion.**
+
+The recommendation was never dependent on adding a second full agent. It proposed a lightweight preprocessing layer that uses deterministic, parallel execution and invokes an LLM only when needed.
+
+That directly addresses the concerns raised:
+
+* It preserves the existing orchestrator.
+* It avoids an additional agent-planning cycle.
+* It reduces latency and operational complexity.
+* It keeps essential validation before orchestration.
+* It supports a clean rollback boundary.
+* It allows specialized agent behavior to be introduced later only for tasks that truly require it.
+* It prevents simple operations, such as loading preferences or validating scope, from unnecessarily consuming LLM resources.
+
+The main adjustment should be semantic and architectural:
+
+> Replace “pre-orchestrator agent” with “preprocessing layer,” “request-readiness layer,” or “pre-orchestration pipeline.”
+
+## Revised Decision Statement
+
+We will preserve the existing orchestrator as the system’s primary routing agent and introduce a lightweight request-readiness layer for validation, metadata enrichment, clarification, privacy and scope checks, and user-facing progress.
+
+This layer will use direct application logic and deterministic tools by default, execute independent checks in parallel, and invoke an LLM only when the request contains genuine ambiguity that cannot be resolved reliably through code.
+
+Hard validation must complete before orchestration. Optional enrichment must not unnecessarily block execution and should fail open when unavailable. The preprocessing layer will not perform routing or duplicate capabilities already handled by the orchestrator.
+
+The design will be evaluated using end-to-end latency, time to first response, downstream success rate, clarification frequency, enrichment accuracy, failure-prevention rate, and operational cost before full rollout.
+
+The core trade-off is not pre-orchestrator versus no pre-orchestrator. It is:
+
+**a full generative agent on every request versus a selective, bounded preprocessing workflow.**
+
+The selective workflow remains the recommended option because it provides the required validation and enrichment benefits without introducing unnecessary agent latency and complexity.
