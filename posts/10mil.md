@@ -71,3 +71,32 @@ Complete development and QA using the current approach. In parallel, validate th
 | Front-end team               | Validate connectivity to the backend APIs.                                                     |
 | Security / project team      | Complete remaining ATO activities and confirm penetration-testing scope.                       |
 | Architecture / finance       | Produce a production design and cost estimate after realistic usage assumptions are confirmed. |
+
+This discussion is about replacing a **pre-orchestrator AI agent** with a faster, deterministic **readiness check**.
+
+The proposed check classifies each request into four outcomes:
+
+1. **Ready** — continue to the orchestrator.
+2. **Needs clarification** — ask one focused question.
+3. **Not allowed** — return a safe access or policy message.
+4. **Check unavailable or inconclusive** — continue through the normal orchestration flow.
+
+The main disagreement is about how reliably deterministic code can detect missing information. Simple checks—such as language detection or whether a date-like expression exists—are straightforward. The harder problem is **semantic completeness**. For example, the word “location” may appear in a question without identifying an actual location:
+
+> “Give me the sales at the location.”
+
+A keyword-based checker might conclude that location information is present, even though the request remains ambiguous.
+
+The emerging compromise is a **hybrid, fail-open design**:
+
+* Use deterministic checks for a small, agreed set of high-confidence requirements, such as location, time range, metric, and access permissions.
+* Ask a clarification only when a rule can confidently identify the missing field.
+* Do not attempt to solve every ambiguous case in the readiness layer.
+* Pass uncertain or complex cases to the orchestrator and its downstream agents.
+* Measure the approach using clarification accuracy, false-positive rate, latency, and model-call reduction.
+
+The strongest architectural principle from the discussion is:
+
+> The readiness check should be a narrow front-door validator, not another general-purpose reasoning agent.
+
+Its goal is not to understand every request fully. Its goal is to cheaply catch common, obvious issues without blocking valid requests or duplicating the orchestrator’s work.
