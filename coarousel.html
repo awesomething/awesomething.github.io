@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Coarousel</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, January 19, 2024">Fri, January 19, 2024</time>
+        <h1 class="mar-b-7">Coarousel</h1>
+    </header>
+    <h1 id="carouseltabremaketextoverlayimplementationplan">Carousel Tab + Remake Text-Overlay — Implementation Plan</h1>
+<p>Two IG-native features for Creator Studio (<code>components/Creator.tsx</code> and children):</p>
+<ol>
+<li>A <strong>Carousel</strong> tab, alongside the existing Remake and Shorts tabs.</li>
+<li>A <strong>suggested text overlay</strong> button on generated videos in the <strong>Remake</strong> tab (top-of-video hook text, IG Reels style).</li>
+</ol>
+<p>Grounded in the current code: <code>mainTab</code> in <code>Creator.tsx</code> / <code>CreatorDesktop.tsx</code> / <code>CreatorMobile.tsx</code> is currently <code>"text2video" | "shorts"</code> ("text2video" is labeled <strong>Remake</strong> in the UI). Generated videos are Cloudinary-hosted (<code>app/api/videoxters/status/[jobId]/route.ts</code> uploads provider output to Cloudinary), and the repo already has a precedent for computing derived-video URLs on the fly via string transformation (<code>app/api/videoxters/_services/cloudinary-transform.ts</code>, used today for watermark cropping). Both features reuse that pattern instead of introducing new render infra.</p>
+<hr />
+<h2 id="featureacarouseltab">Feature A: Carousel tab</h2>
+<h3 id="goal">Goal</h3>
+<p>Turn a source video's key points into an IG carousel — a set of 1080×1350 slide images, each with a headline burned on top of a still — generated the same way Shorts/Remake already turn a video into repurposed content.</p>
+<h3 id="userflow">User flow</h3>
+<ol>
+<li>User opens a Creator video, clicks the new <strong>Carousel</strong> tab.</li>
+<li>Clicks <strong>Generate Carousel</strong>. Backend breaks the transcript into N key points (reusing the existing scene-analysis approach from <code>/api/creator/analyze</code>), picks/creates a background image per slide, and writes headline text on each.</li>
+<li>User sees a grid of slides, can regenerate an individual slide's text, reorder, and download the set (ZIP) or (once available) publish to Instagram via <code>ConnectorsTab</code>.</li>
+</ol>
+<h3 id="opendecisionsneedyourcallbeforeimplementation">Open decisions (need your call before implementation)</h3>
+<ul>
+<li><strong>Background source</strong>: real frame grabs from the video vs. AI-generated illustrative backgrounds vs. a plain branded background (fastest to ship, matches <code>reports/brand.yaml</code>'s voice/visual restraint).</li>
+<li><strong>Slide count</strong>: fixed (e.g. always 6) or variable based on transcript length.</li>
+<li><strong>Publish path</strong>: Instagram publishing isn't live yet (<code>ConnectorsTab.tsx</code> lists Instagram as "Coming soon") — v1 should ship as <strong>download-only</strong> (ZIP export), with IG carousel publish wired in once that connector exists.</li>
+</ul>
+<h3 id="rollout">Rollout</h3>
+<ul>
+<li>Phase 1: generate + preview + download ZIP.</li>
+<li>Phase 2: per-slide regenerate/reorder/edit text inline.</li>
+<li>Phase 3: publish via Instagram connector once it ships.</li>
+</ul>
+<hr />
+<h2 id="featurebsuggestedtextoverlayonremakevideos">Feature B: Suggested text overlay on Remake videos</h2>
+<h3 id="goal-1">Goal</h3>
+<p>After a Remake ("text2video") scene finishes generating, let the user add IG-style bold hook text burned onto the top of the video (e.g. "POV: …", "3 things nobody tells you about X") without leaving the tab.</p>
+<h3 id="userflow-1">User flow</h3>
+<ol>
+<li>In <code>Text2VideoTab.tsx</code>'s job grid (the <code>jobs.map(...)</code> block, ~line 410), once a job is <code>status === "completed"</code>, show a new <strong>Add Text</strong> button on that card.</li>
+<li>Clicking it calls a suggestion endpoint seeded from that job's <code>scriptText</code> (+ the parent video's title/transcript for context) and returns 2–3 short suggested overlay lines.</li>
+<li>User picks one (or types their own), sees a live preview of the text burned onto the video via a Cloudinary transform (instant — no re-render), and clicks <strong>Apply</strong>.</li>
+<li>The chosen text is saved on the job; the video card, downloads, and any future publish flow use the overlay URL instead of the raw one from then on.</li>
+</ol>
+<h3 id="uichanges">UI changes</h3>
+<ul>
+<li><code>Text2VideoTab.tsx</code>: add an "Add Text" affordance per completed job card, a small popover/inline panel showing the 2–3 suggestions + a free-text field + Apply button, and swap the <code>&lt;video src={job.videoUrl}&gt;</code> for the overlay URL when <code>overlayText</code> is set.</li>
+</ul>
+<h3 id="datamodel">Data model</h3>
+<ul>
+<li>Add <code>overlayText String?</code> (and optionally <code>overlayStyle Json?</code> for position/color if we want more than one style later) to <code>VideoxtersJob</code> in <code>prisma/schema.prisma</code>. No new table — this mirrors how cropping is handled today (computed URL, not a re-uploaded asset).</li>
+</ul>
+<h3 id="backend">Backend</h3>
+<ul>
+<li><code>app/api/creator/video-text-suggestions/route.ts</code> (new): <code>{ jobId }</code> → OpenAI structured output (same <code>captions/route.ts</code> pattern) returning <code>{ suggestions: string[] }</code>, seeded with <code>job.scriptText</code> and the parent <code>creatorVideo.title</code>/transcript excerpt.</li>
+<li><code>app/api/videoxters/apply-text/route.ts</code> (new, or extend the existing <code>status/[jobId]</code> route): <code>{ jobId, text }</code> → validates ownership, writes <code>overlayText</code> on the <code>VideoxtersJob</code> row.</li>
+<li>New helper alongside <code>cloudinary-transform.ts</code>, e.g. <code>getTextOverlayVideoUrl(videoUrl, text)</code>, building a Cloudinary <code>l_text:Arial_60_bold:&lt;url-encoded text&gt;</code> layer positioned top-center (<code>g_north</code>) with a readability treatment (white text + subtle dark backing/stroke) — computed on read, same as <code>getCroppedVideoUrl</code>, so no extra storage or render step.</li>
+</ul>
+<h3 id="downstreamwiring">Downstream wiring</h3>
+<ul>
+<li><code>ConnectorsTab</code>/<code>YouTubeConnectorCard</code> currently receive <code>publishableJob = { jobId, videoUrl }</code> from <code>CreatorDesktop.tsx</code> (latest completed <code>VideoxtersJob</code>, not scoped to Remake specifically — worth confirming that's the intended target before wiring overlay text into publishing). Once overlay text is applied, that <code>videoUrl</code> should resolve through <code>getTextOverlayVideoUrl</code> too, so what gets published matches the preview.</li>
+</ul>
+<h3 id="rollout-1">Rollout</h3>
+<ul>
+<li>Phase 1: suggest + preview + apply (this plan's scope).</li>
+<li>Phase 2: font/position/color controls if the fixed IG-meme-text style isn't enough.</li>
+</ul>
+<hr />
+<h2 id="sharedgroundwork">Shared groundwork</h2>
+<p>Both features lean on the same trick — Cloudinary delivery-URL transforms for compositing text/frames without a render pipeline — so it's worth extracting a small shared <code>lib/cloudinaryOverlay.ts</code> (text-layer string builder) that both <code>getTextOverlayVideoUrl</code> (Feature B) and the carousel slide renderer (Feature A) call into, rather than duplicating the transform-string logic.</p>
+<h2 id="sequencingrecommendation">Sequencing recommendation</h2>
+<p>Ship Feature B first — it's the smaller change (one new column, two small routes, one UI affordance on an existing tab) and validates the Cloudinary-text-overlay approach before Feature A builds a whole new tab and generation pipeline on top of the same technique.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

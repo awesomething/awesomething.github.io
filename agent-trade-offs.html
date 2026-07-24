@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Agent trade offs</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Thu, June 12, 2025">Thu, June 12, 2025</time>
+        <h1 class="mar-b-7">Agent trade offs</h1>
+    </header>
+    <h1 id="meetingsummaryagentstatusandfriendlystreamingmessages">Meeting Summary: Agent Status and Friendly Streaming Messages</h1>
+<h2 id="executivesummary">Executive Summary</h2>
+<p>The discussion focused on improving the streaming experience for an agent-based application by showing user-friendly progress messages while suppressing internal orchestration details.</p>
+<p>A prototype was demonstrated in which the existing response structure remains unchanged for backward compatibility, while an additional <code>friendly_message</code> object communicates progress such as:</p>
+<ul>
+<li>Understanding the user’s question</li>
+<li>Detecting the language</li>
+<li>Retrieving information from the knowledge base</li>
+<li>Completing a tool operation</li>
+<li>Preparing the final response</li>
+</ul>
+<p>The team generally agreed with the direction but raised concerns about how these messages should be represented, whether they should use existing event types, and whether temporary progress messages might accidentally appear in the final response.</p>
+<p>The key design challenge is balancing backward compatibility, frontend simplicity, extensibility, and clear separation between transient progress events and permanent response content.</p>
+<hr />
+<h1 id="cleanedupmeetingminutes">Cleaned-Up Meeting Minutes</h1>
+<h2 id="1initialsetup">1. Initial Setup</h2>
+<p>The meeting began with troubleshooting related to Google Meet and Calendar behavior. The organizer experienced issues where deleted or modified meetings appeared to retain previous limits or settings.</p>
+<p>The team briefly discussed waiting for another participant, sharing the meeting link, and recording the session.</p>
+<h2 id="2prototypeoverview">2. Prototype Overview</h2>
+<p>A prototype was presented to demonstrate user-friendly streaming messages.</p>
+<p>The implementation was designed with the following principle:</p>
+<blockquote>
+  <p>Existing response fields and behavior should remain unchanged to avoid breaking the current frontend.</p>
+</blockquote>
+<p>Instead of modifying older response formats, a separate or additional structure was introduced for friendly progress messages.</p>
+<p>The prototype showed a sequence similar to:</p>
+<ol>
+<li>Understanding the user’s question</li>
+<li>Identifying the language of the question</li>
+<li>Running retrieval from the knowledge base</li>
+<li>Completing retrieval</li>
+<li>Returning or summarizing the final answer</li>
+</ol>
+<h2 id="3suppressionofinternaltransitions">3. Suppression of Internal Transitions</h2>
+<p>The presenter explained that internal transitions between the orchestrator, agents, and tools had been suppressed.</p>
+<p>Examples of internal messages that should not be shown to users include:</p>
+<ul>
+<li>Transferring control from one agent to another</li>
+<li>Starting an internal tool call</li>
+<li>Switching from the orchestrator to the RAG component</li>
+<li>Internal execution or routing events</li>
+</ul>
+<p>The intention is to expose only meaningful progress updates while hiding implementation details.</p>
+<h2 id="4toolnaming">4. Tool Naming</h2>
+<p>Tool names are currently converted into readable labels by replacing underscores with spaces.</p>
+<p>For example:</p>
+<p><code>retrieval_from_knowledge_base</code></p>
+<p>becomes:</p>
+<p><code>Retrieval from knowledge base</code></p>
+<p>The team noted that more intentional, logical, or product-friendly labels may be needed rather than relying only on automatic formatting.</p>
+<h2 id="5eventtypediscussion">5. Event Type Discussion</h2>
+<p>A suggestion was made to use or customize the existing event type instead of adding only a separate friendly message field.</p>
+<p>The response was that event types originate from the Agent Development Kit and may not be freely customizable in all cases.</p>
+<p>The prototype therefore introduced a separate structure to preserve backward compatibility and avoid changing existing event behavior.</p>
+<p>A possible alternative discussed was:</p>
+<ul>
+<li>Retain the original event type</li>
+<li>Add a customizable event-type label or display text</li>
+<li>Generate a separate progress event when necessary</li>
+</ul>
+<h2 id="6finalresponsecontamination">6. Final Response Contamination</h2>
+<p>A concern was raised that friendly progress information should not appear in the final response served to the user.</p>
+<p>The team agreed that progress events should be temporary and must remain separate from the final answer content.</p>
+<h2 id="7extensiblemessagestructure">7. Extensible Message Structure</h2>
+<p>The presenter explained that the friendly-message design was intentionally created as a structured object rather than a single string.</p>
+<p>Potential future message categories include:</p>
+<ul>
+<li>Informational progress</li>
+<li>Completion or terminal messages</li>
+<li>Human feedback required</li>
+<li>User confirmation required</li>
+<li>Citations or sources</li>
+<li>Warnings</li>
+<li>Errors</li>
+</ul>
+<p>The goal is to support additional UI behaviors later, such as:</p>
+<ul>
+<li>Toast messages</li>
+<li>Inline progress indicators</li>
+<li>Approval prompts</li>
+<li>Citation panels</li>
+<li>Human-in-the-loop interactions</li>
+</ul>
+<hr />
+<h1 id="keydecisionsandagreements">Key Decisions and Agreements</h1>
+<h2 id="confirmedorstronglyagreed">Confirmed or Strongly Agreed</h2>
+<ol>
+<li><p>Existing response behavior should remain backward compatible.</p></li>
+<li><p>Internal agent-to-agent and orchestrator-to-tool transitions should generally be hidden from end users.</p></li>
+<li><p>User-facing progress messages should use friendly, readable language.</p></li>
+<li><p>Progress messages should not be included in the final answer content.</p></li>
+<li><p>The message format should be extensible enough to support more than informational status updates.</p></li>
+<li><p>Early feedback is needed before implementing the same pattern across all agents and tools.</p></li>
+</ol>
+<h2 id="notyetfinalized">Not Yet Finalized</h2>
+<ol>
+<li>Whether friendly messages should be represented through:</li>
+</ol>
+<ul>
+<li>Existing event types</li>
+<li>A new event type</li>
+<li>Event display text</li>
+<li>A separate <code>friendly_message</code> object</li>
+</ul>
+<ol>
+<li>Whether progress events should be generated by:</li>
+</ol>
+<ul>
+<li>The backend</li>
+<li>The orchestrator</li>
+<li>Individual tools</li>
+<li>The frontend based on raw events</li>
+</ul>
+<ol>
+<li><p>The exact schema for informational, terminal, citation, and human-feedback messages.</p></li>
+<li><p>How the frontend will distinguish transient messages from persistent response content.</p></li>
+<li><p>Whether generic tool names are sufficient or require a centrally managed display-name mapping.</p></li>
+</ol>
+<hr />
+<h1 id="actionitems">Action Items</h1>
+<p>| Action                                                                              | Suggested Owner               | Priority |
+| ----------------------------------------------------------------------------------- | ----------------------------- | -------- |
+| Define the final schema for friendly and progress messages                          | Backend and frontend leads    | High     |
+| Confirm how the frontend currently consumes <code>event_type</code>                            | Frontend team                 | High     |
+| Ensure progress events are excluded from the final response payload                 | Backend team                  | High     |
+| Define which internal events must be suppressed                                     | Agent platform team           | High     |
+| Create a standard mapping between tool names and user-friendly labels               | Product and engineering       | Medium   |
+| Decide whether friendly messages are separate events or metadata on existing events | Architecture team             | High     |
+| Add terminal, warning, error, citation, and human-input message categories          | Backend team                  | Medium   |
+| Test compatibility with clients that do not recognize the new field                 | QA and backend                | High     |
+| Validate behavior with the actual RAG and NLP integrations                          | RAG/NLP team                  | High     |
+| Review the prototype before scaling the change to all tools                         | Technical leads               | High     |
+| Document event lifecycle and frontend rendering rules                               | Architecture or platform team | Medium   |
+| Add automated tests to prevent progress messages from leaking into final answers    | QA/backend                    | High     |</p>
+<hr />
+<h1 id="technicalfeedback">Technical Feedback</h1>
+<h2 id="whatisworkingwell">What Is Working Well</h2>
+<h3 id="1backwardcompatibility">1. Backward Compatibility</h3>
+<p>Adding an optional field or structured object is safer than changing existing response fields.</p>
+<p>Older clients can ignore the new field, while newer clients can use it to improve the experience.</p>
+<h3 id="2suppressionofinternalorchestration">2. Suppression of Internal Orchestration</h3>
+<p>Hiding messages such as “transferring control” or raw tool-call events is the correct user-experience direction.</p>
+<p>Most users care about what the system is doing at a meaningful level, not how agents are internally routed.</p>
+<h3 id="3structuredmessageobject">3. Structured Message Object</h3>
+<p>Using an object instead of a simple string creates room for future capabilities.</p>
+<p>A structured message can support:</p>
+<ul>
+<li>Type</li>
+<li>Display text</li>
+<li>Severity</li>
+<li>Lifecycle</li>
+<li>Tool identity</li>
+<li>Citations</li>
+<li>Required user action</li>
+<li>Completion status</li>
+</ul>
+<h3 id="4earlyprototypereview">4. Early Prototype Review</h3>
+<p>Getting architectural feedback before implementing the same behavior across many tools is appropriate and reduces rework.</p>
+<h2 id="risksandconcerns">Risks and Concerns</h2>
+<h3 id="1duplicationbetweeneventtypeandfriendlymessage">1. Duplication Between Event Type and Friendly Message</h3>
+<p>If both fields attempt to describe the same event, they may become inconsistent.</p>
+<p>For example:</p>
+<ul>
+<li><code>event_type</code>: <code>tool_call_started</code></li>
+<li><code>friendly_message</code>: “Analyzing your question”</li>
+<li>Actual tool: knowledge retrieval</li>
+</ul>
+<p>The schema needs to clearly define the responsibility of each field.</p>
+<h3 id="2progressmessagesinfinaloutput">2. Progress Messages in Final Output</h3>
+<p>If the final response is created by aggregating streamed text, friendly messages may accidentally be included.</p>
+<p>Progress events should therefore not use the same content channel as final answer tokens.</p>
+<h3 id="3toomanyprogressmessages">3. Too Many Progress Messages</h3>
+<p>Displaying every tool event can make the interface noisy and slower-feeling.</p>
+<p>A long workflow might produce dozens of events even when the actual execution is fast.</p>
+<h3 id="4automaticallygeneratedtoollabels">4. Automatically Generated Tool Labels</h3>
+<p>Replacing underscores with spaces is useful as a fallback, but may produce awkward or overly technical language.</p>
+<p>Examples:</p>
+<ul>
+<li><code>run_rag_query_v2</code></li>
+<li><code>fetch_customer_360</code></li>
+<li><code>invoke_sub_agent</code></li>
+</ul>
+<p>These should not be exposed directly to users.</p>
+<h3 id="5eventorderingandtiming">5. Event Ordering and Timing</h3>
+<p>Parallel tools, retries, and nested agents may cause status events to arrive out of sequence.</p>
+<p>The schema should include identifiers that allow the frontend to correctly update, replace, or close a progress item.</p>
+<h3 id="6localization">6. Localization</h3>
+<p>Hard-coded English friendly messages may conflict with the detected user language.</p>
+<p>Language detection occurs early in the workflow, so subsequent progress messages should ideally follow the user’s language.</p>
+<h3 id="7ambiguouscompletionstate">7. Ambiguous Completion State</h3>
+<p>A message such as “Retrieval completed” does not indicate whether retrieval:</p>
+<ul>
+<li>Succeeded</li>
+<li>Returned no results</li>
+<li>Partially succeeded</li>
+<li>Timed out</li>
+<li>Fell back to another source</li>
+</ul>
+<p>The status model should distinguish these cases.</p>
+<hr />
+<h1 id="recommendations">Recommendations</h1>
+<h2 id="1separateprotocoleventsfromdisplaytext">1. Separate Protocol Events From Display Text</h2>
+<p>Keep machine-readable events separate from user-facing language.</p>
+<p>Recommended structure:</p>
+<pre><code class="json language-json">{
+  "event_type": "tool_execution",
+  "event_phase": "started",
+  "event_id": "evt_123",
+  "parent_event_id": "evt_100",
+  "tool": {
+    "name": "retrieve_knowledge",
+    "display_name": "Searching the knowledge base"
+  },
+  "ui": {
+    "message": "Searching for relevant information…",
+    "message_type": "progress",
+    "visibility": "transient"
+  }
+}
+</code></pre>
+<p>The event type should be stable and machine-readable. The friendly message can change without affecting integrations.</p>
+<h2 id="2introduceanexplicitvisibilityorpersistencefield">2. Introduce an Explicit Visibility or Persistence Field</h2>
+<p>Do not rely on the frontend to infer whether a message belongs in the final response.</p>
+<p>Recommended values:</p>
+<ul>
+<li><code>transient</code></li>
+<li><code>persistent</code></li>
+<li><code>final</code></li>
+<li><code>internal</code></li>
+</ul>
+<p>This would allow the frontend to safely ignore internal events and prevent transient messages from appearing in conversation history.</p>
+<h2 id="3defineasmallcontrolledmessagetaxonomy">3. Define a Small, Controlled Message Taxonomy</h2>
+<p>Avoid creating too many overlapping message types.</p>
+<p>A practical initial taxonomy would be:</p>
+<ul>
+<li><code>progress</code></li>
+<li><code>success</code></li>
+<li><code>warning</code></li>
+<li><code>error</code></li>
+<li><code>action_required</code></li>
+<li><code>citation</code></li>
+<li><code>final</code></li>
+</ul>
+<p>The execution phase can remain separate:</p>
+<ul>
+<li><code>started</code></li>
+<li><code>in_progress</code></li>
+<li><code>completed</code></li>
+<li><code>failed</code></li>
+<li><code>cancelled</code></li>
+</ul>
+<h2 id="4useeventidsandupdateexistinguielements">4. Use Event IDs and Update Existing UI Elements</h2>
+<p>Instead of adding a new message for every transition, reuse the same UI element.</p>
+<p>Example:</p>
+<ul>
+<li>“Searching the knowledge base…”</li>
+<li>Updated to “Found relevant information”</li>
+<li>Then removed or marked complete</li>
+</ul>
+<p>This reduces clutter and gives the frontend a cleaner progress experience.</p>
+<h2 id="5donotexposerawtoolnamesbydefault">5. Do Not Expose Raw Tool Names by Default</h2>
+<p>Create a central display-name registry.</p>
+<p>Example:</p>
+<pre><code class="json language-json">{
+  "retrieve_from_kb": {
+    "started": "Searching the knowledge base…",
+    "completed": "Relevant information found"
+  }
+}
+</code></pre>
+<p>Automatic underscore replacement should only be a fallback for development environments.</p>
+<h2 id="6applyprogressmessagethrottling">6. Apply Progress Message Throttling</h2>
+<p>Very fast operations should not always show a progress message.</p>
+<p>For example:</p>
+<ul>
+<li>Do not display an event if the operation completes in under 300–500 milliseconds.</li>
+<li>Show a status only if processing lasts long enough for the message to be useful.</li>
+<li>Avoid repeated updates more frequently than a defined interval.</li>
+</ul>
+<p>This prevents flickering and unnecessary noise.</p>
+<h2 id="7distinguishuserrelevantworkfrominternalwork">7. Distinguish User-Relevant Work From Internal Work</h2>
+<p>Recommended user-visible stages:</p>
+<ol>
+<li>Understanding the request</li>
+<li>Searching relevant information</li>
+<li>Analyzing the results</li>
+<li>Preparing the answer</li>
+<li>Waiting for user input, when applicable</li>
+</ol>
+<p>Internal routing, retries, agent handoffs, token processing, and implementation-specific tool events should remain hidden unless needed for debugging.</p>
+<h2 id="8preservelanguageconsistency">8. Preserve Language Consistency</h2>
+<p>Once the user’s language is identified, progress messages should use that language.</p>
+<p>Until language detection is complete, the system may:</p>
+<ul>
+<li>Show no initial message</li>
+<li>Use a neutral loading indicator</li>
+<li>Use the application’s default language</li>
+</ul>
+<h2 id="9treatcitationsseparately">9. Treat Citations Separately</h2>
+<p>Citations should not be modeled only as friendly informational messages.</p>
+<p>They should have structured fields such as:</p>
+<pre><code class="json language-json">{
+  "message_type": "citation",
+  "source_id": "source_123",
+  "title": "Internal Knowledge Article",
+  "url": "...",
+  "supports": ["response_segment_2"]
+}
+</code></pre>
+<p>This allows the frontend to render sources accurately and associate them with specific claims.</p>
+<h2 id="10addaformalhumanintheloopevent">10. Add a Formal Human-in-the-Loop Event</h2>
+<p>User confirmation should be a dedicated event type rather than an informational toast.</p>
+<p>Recommended fields include:</p>
+<ul>
+<li>Prompt</li>
+<li>Available actions</li>
+<li>Whether input is mandatory</li>
+<li>Expiration or timeout</li>
+<li>Whether execution is paused</li>
+<li>Correlation ID for resuming execution</li>
+</ul>
+<h2 id="11definethestreamingcontractbeforefullintegration">11. Define the Streaming Contract Before Full Integration</h2>
+<p>The team should document:</p>
+<ul>
+<li>Which component emits each event</li>
+<li>Which events are public</li>
+<li>Which events are internal</li>
+<li>How events are ordered</li>
+<li>How retries are represented</li>
+<li>How final content is distinguished</li>
+<li>How old clients behave</li>
+<li>How errors and cancellations are handled</li>
+</ul>
+<p>This should be agreed before integrating all RAG and NLP components.</p>
+<h2 id="12recommendedimplementationdirection">12. Recommended Implementation Direction</h2>
+<p>The strongest option is:</p>
+<ul>
+<li>Keep existing ADK event types unchanged.</li>
+<li>Add a separate optional <code>ui</code> or <code>presentation</code> object.</li>
+<li>Mark each event as internal, transient, persistent, or final.</li>
+<li>Use stable IDs to update existing progress items.</li>
+<li>Keep final answer tokens in a separate response event.</li>
+<li>Maintain a controlled mapping of backend tools to user-friendly labels.</li>
+<li>Suppress internal orchestration events by default.</li>
+<li>Allow debug clients to opt in to raw events.</li>
+</ul>
+<p>This approach provides backward compatibility while keeping the protocol clean and extensible.</p>
+<hr />
+<h1 id="suggestedacceptancecriteria">Suggested Acceptance Criteria</h1>
+<p>The feature should be considered ready when:</p>
+<ol>
+<li>Existing clients operate without modification.</li>
+<li>New clients can display friendly progress messages.</li>
+<li>Internal orchestration details are not visible to standard users.</li>
+<li>Friendly progress text never appears in the final answer.</li>
+<li>Messages are displayed in the user’s language where supported.</li>
+<li>Parallel and repeated tools do not create confusing duplicate statuses.</li>
+<li>Errors, cancellations, and user-input requests have distinct behavior.</li>
+<li>Tool labels are understandable and not generated solely from internal names.</li>
+<li>Citations remain structured and traceable.</li>
+<li>Automated tests verify ordering, compatibility, suppression, and final-response separation.</li>
+</ol>
+<hr />
+<h1 id="proposedfinaldecisionstatement">Proposed Final Decision Statement</h1>
+<p>The team should retain the existing event structure for backward compatibility and introduce a separate optional presentation layer for user-facing progress information. This layer should clearly identify message type, execution phase, visibility, persistence, and event correlation. Internal agent transitions should remain suppressed, and transient messages must never be merged into the final response.</p>
+<h2 id="latencyvsresultqualityrecommendation">Latency vs. Result Quality: Recommendation</h2>
+<p>The concern is valid: placing a full LLM-driven pre-orchestrator in front of the existing orchestrator can add noticeable latency. However, enrichment, validation, clarification, and human-in-the-loop processing will add some cost regardless of where they are implemented.</p>
+<p>The key question is not whether there will be additional latency, but <strong>which requests genuinely need that additional processing</strong>.</p>
+<h3 id="recommendeddecision">Recommended decision</h3>
+<p>Keep the new pre-orchestration layer, but <strong>do not run it as a fully autonomous LLM agent for every request</strong>.</p>
+<p>Use it as a lightweight, code-controlled preprocessing pipeline:</p>
+<pre><code class="text language-text">User request
+   ↓
+Fast deterministic checks
+   ├─ Language
+   ├─ Existing metadata
+   ├─ Time/date extraction
+   ├─ Location availability
+   └─ Basic validation
+   ↓
+Conditional LLM enrichment only when ambiguous
+   ↓
+Existing orchestrator
+   ↓
+Existing RAG/tool workflow
+</code></pre>
+<p>The existing orchestrator should remain unchanged and continue handling classification, RAG routing, and execution.</p>
+<h2 id="whythisisthebestcompromise">Why this is the best compromise</h2>
+<h3 id="resultqualitybenefits">Result-quality benefits</h3>
+<p>The preprocessing layer can:</p>
+<ul>
+<li>Reject unsupported languages before expensive downstream processing.</li>
+<li>Detect missing mandatory information.</li>
+<li>Normalize time, location, and other entities.</li>
+<li>Request clarification before sending an incomplete request downstream.</li>
+<li>Add transparency and progress messages.</li>
+<li>Preserve the proven behavior of the current orchestrator.</li>
+<li>Provide a clean rollback boundary if the new functionality causes problems.</li>
+</ul>
+<h3 id="latencyrisks">Latency risks</h3>
+<p>A separate LLM agent may introduce:</p>
+<ul>
+<li>Another model invocation.</li>
+<li>Serial execution before the main orchestrator starts.</li>
+<li>Additional prompt construction and context processing.</li>
+<li>Tool-selection overhead.</li>
+<li>Increased tail latency when the model retries or calls multiple tools.</li>
+<li>Duplicate reasoning between the pre-orchestrator and main orchestrator.</li>
+</ul>
+<p>The suggested two-to-three-second increase is possible, but it should be measured rather than treated as a fixed number. The actual impact will depend on the model, prompt size, tool calls, infrastructure, and whether operations run sequentially or concurrently.</p>
+<h2 id="separatehardgatesfromsoftenrichment">Separate hard gates from soft enrichment</h2>
+<p>Not every enrichment item should block the orchestrator.</p>
+<h3 id="hardgates">Hard gates</h3>
+<p>Complete these before forwarding:</p>
+<ul>
+<li>Is the language supported?</li>
+<li>Is the request safe and structurally valid?</li>
+<li>Is mandatory information missing?</li>
+<li>Does the workflow require explicit confirmation?</li>
+<li>Is there a reason execution must terminate?</li>
+</ul>
+<h3 id="softenrichment">Soft enrichment</h3>
+<p>These should not automatically delay every request:</p>
+<ul>
+<li>Optional location enhancement</li>
+<li>Optional timezone inference</li>
+<li>Rewriting an already clear request</li>
+<li>Generating friendly status text</li>
+<li>Extracting metadata that the existing orchestrator does not require</li>
+<li>Adding nonessential context</li>
+</ul>
+<p>Soft enrichment can run conditionally, in parallel, or be skipped when confidence is already high.</p>
+<h2 id="recommendedimplementationmodel">Recommended implementation model</h2>
+<h3 id="1usetoolsasafixedpipelinenotagentselectedactions">1. Use tools as a fixed pipeline, not agent-selected actions</h3>
+<p>The current description includes predictable steps such as:</p>
+<ol>
+<li>Detect language.</li>
+<li>Detect time.</li>
+<li>Detect location.</li>
+<li>Validate metadata.</li>
+<li>Decide whether to continue or terminate.</li>
+</ol>
+<p>These are known steps. They do not require an agent to decide what to do every time.</p>
+<p>Implement them as an explicit asynchronous pipeline:</p>
+<pre><code class="python language-python">async def preprocess_request(request):
+    language_result, time_result, location_result = await asyncio.gather(
+        detect_language(request),
+        detect_time(request),
+        detect_location(request),
+    )
+
+    return process_results(
+        request=request,
+        language=language_result,
+        time=time_result,
+        location=location_result,
+    )
+</code></pre>
+<p>This avoids an extra LLM planning cycle and allows independent skills to run concurrently.</p>
+<h3 id="2useanllmonlywhendeterministicprocessingisinsufficient">2. Use an LLM only when deterministic processing is insufficient</h3>
+<p>For example:</p>
+<pre><code class="text language-text">Clear language → no LLM
+Clear ISO date → no LLM
+Known user timezone → no LLM
+Ambiguous “next Friday evening” → lightweight LLM or clarification
+Ambiguous location reference → clarification or contextual model call
+</code></pre>
+<p>This changes the latency model from:</p>
+<pre><code class="text language-text">Every request pays the LLM cost
+</code></pre>
+<p>to:</p>
+<pre><code class="text language-text">Only ambiguous requests pay the LLM cost
+</code></pre>
+<h3 id="3keepskillexecutionandprocessingtogether">3. Keep skill execution and processing together</h3>
+<p>The proposed pattern of keeping each skill and its processing logic close together is reasonable.</p>
+<p>A useful structure would be:</p>
+<pre><code class="text language-text">skills/
+  language/
+    tool.py
+    processor.py
+    models.py
+    test_skill.py
+
+  time/
+    tool.py
+    processor.py
+    models.py
+    test_skill.py
+</code></pre>
+<p>For very small skills, <code>tool.py</code> and <code>processor.py</code> can remain in one file. Split them only when the logic becomes difficult to maintain.</p>
+<p>Each skill should return a structured result rather than only a message:</p>
+<pre><code class="python language-python">class SkillResult:
+    status: str
+    value: object | None
+    confidence: float | None
+    message: str | None
+    action: str  # continue, default, clarify, terminate
+    metadata: dict
+</code></pre>
+<p>The user-facing message should be presentation metadata, not the primary result.</p>
+<h2 id="processingoutcomes">Processing outcomes</h2>
+<p>Standardize the processor outcome across all skills:</p>
+<pre><code class="text language-text">CONTINUE
+DEFAULT
+CLARIFY
+TERMINATE
+DEGRADED_CONTINUE
+</code></pre>
+<h3 id="examples">Examples</h3>
+<p><strong>Supported language</strong></p>
+<pre><code class="text language-text">Result: CONTINUE
+Metadata: language=en
+User message: optional transient progress message
+</code></pre>
+<p><strong>Unsupported language</strong></p>
+<pre><code class="text language-text">Result: TERMINATE
+Final message: supported-language guidance
+Skip summarization: true
+</code></pre>
+<p><strong>Time not provided but optional</strong></p>
+<pre><code class="text language-text">Result: DEFAULT
+Metadata: timezone=user_default
+Continue to orchestrator
+</code></pre>
+<p><strong>Time is required but ambiguous</strong></p>
+<pre><code class="text language-text">Result: CLARIFY
+Execution paused until the user responds
+</code></pre>
+<p><strong>Location service unavailable</strong></p>
+<pre><code class="text language-text">Result: DEGRADED_CONTINUE
+Forward request without location
+Do not terminate unless location is mandatory
+</code></pre>
+<h2 id="avoidserialskillexecution">Avoid serial skill execution</h2>
+<p>A flow like this will accumulate latency:</p>
+<pre><code class="text language-text">Detect language
+   ↓
+Detect time
+   ↓
+Detect location
+   ↓
+Enrich request
+   ↓
+Call orchestrator
+</code></pre>
+<p>Instead, run independent checks concurrently:</p>
+<pre><code class="text language-text">             ┌─ Detect language ─┐
+User input ──┼─ Detect time ─────┼─ Aggregate ─ Orchestrator
+             └─ Detect location ─┘
+</code></pre>
+<p>Only dependencies should be sequential. For example, timezone conversion may need location, but language detection does not need to wait for location detection.</p>
+<h2 id="usefastpaths">Use fast paths</h2>
+<p>Define a fast path for normal requests.</p>
+<p>Example:</p>
+<pre><code class="text language-text">Request is clear
+Language is supported
+No mandatory metadata is missing
+No clarification is required
+</code></pre>
+<p>In this case, the pre-layer should immediately forward the request to the orchestrator with minimal processing.</p>
+<p>A slow path should activate only when:</p>
+<ul>
+<li>Confidence is below a threshold.</li>
+<li>Required metadata is absent.</li>
+<li>The request contains ambiguous temporal or location language.</li>
+<li>User confirmation is required.</li>
+<li>A policy requires termination or escalation.</li>
+</ul>
+<h2 id="streamingrecommendations">Streaming recommendations</h2>
+<p>Streaming can improve perceived responsiveness, but it does not reduce actual execution time.</p>
+<p>Send an immediate lightweight event such as:</p>
+<pre><code class="text language-text">Understanding your request…
+</code></pre>
+<p>Then update the same progress item rather than appending several messages:</p>
+<pre><code class="text language-text">Understanding your request…
+        ↓
+Checking the required details…
+        ↓
+Searching for relevant information…
+</code></pre>
+<p>Do not generate these messages through an LLM. They should come from predefined templates associated with processing stages.</p>
+<p>Also, do not delay orchestration just to emit a progress message.</p>
+<h2 id="failopenversusfailclosed">Fail-open versus fail-closed</h2>
+<p>The processing layer should not become a new single point of failure.</p>
+<h3 id="failclosed">Fail closed</h3>
+<p>Use termination only when proceeding would be invalid:</p>
+<ul>
+<li>Unsupported language with no translation capability</li>
+<li>Mandatory consent missing</li>
+<li>Required data is definitely invalid</li>
+<li>A policy prohibits execution</li>
+</ul>
+<h3 id="failopen">Fail open</h3>
+<p>Continue with the original request when optional enrichment fails:</p>
+<ul>
+<li>Location could not be detected</li>
+<li>Timezone is unavailable</li>
+<li>Friendly message generation fails</li>
+<li>Optional metadata extraction times out</li>
+<li>A noncritical enrichment tool is unavailable</li>
+</ul>
+<p>A suitable rule is:</p>
+<blockquote>
+  <p>Enrichment failure should not become request failure unless the enrichment is mandatory for a correct or safe result.</p>
+</blockquote>
+<h2 id="timeoutandbudgetcontrols">Timeout and budget controls</h2>
+<p>Give the preprocessing layer its own strict latency budget.</p>
+<p>For example:</p>
+<pre><code class="text language-text">Deterministic checks: strict sub-second target
+Optional enrichment: short timeout
+Clarification model call: only when required
+Overall preprocessing: capped before fallback
+</code></pre>
+<p>When an optional skill exceeds its budget:</p>
+<pre><code class="text language-text">Cancel or ignore it
+Record the timeout
+Forward the original request
+</code></pre>
+<p>Do not let the pre-orchestrator wait indefinitely for optional metadata.</p>
+<h2 id="cachingopportunities">Caching opportunities</h2>
+<p>Cache results that are stable across requests:</p>
+<ul>
+<li>User’s preferred language</li>
+<li>Supported-language status</li>
+<li>User timezone</li>
+<li>Default location, with appropriate privacy controls</li>
+<li>Tenant configuration</li>
+<li>Feature flags</li>
+<li>Tool-display labels</li>
+</ul>
+<p>Do not repeatedly invoke a model to detect information already available in session or user metadata.</p>
+<h2 id="queryenrichment">Query enrichment</h2>
+<p>Avoid replacing the original user query with an LLM-rewritten query. Pass both:</p>
+<pre><code class="json language-json">{
+  "original_query": "Can I schedule it next Friday evening?",
+  "normalized_query": "Schedule the event on 2026-07-24 during the evening.",
+  "metadata": {
+    "language": "en",
+    "timezone": "America/New_York",
+    "date_resolution_confidence": 0.93
+  }
+}
+</code></pre>
+<p>This protects against enrichment errors and allows the downstream orchestrator to inspect the user’s exact wording.</p>
+<h2 id="rollbackstrategy">Rollback strategy</h2>
+<p>The new layer should be independently switchable.</p>
+<p>Recommended controls:</p>
+<ul>
+<li>Feature flag for all preprocessing</li>
+<li>Per-skill feature flags</li>
+<li>Shadow mode</li>
+<li>Fail-open mode</li>
+<li>Ability to route directly to the original orchestrator</li>
+<li>Versioned schemas</li>
+<li>Logging of original and enriched requests</li>
+</ul>
+<p>In shadow mode, the pre-layer processes the request and records what it would have done, but the original request still goes directly to the orchestrator. This allows latency and correctness comparison before making it blocking.</p>
+<h2 id="metricsrequiredforthedecision">Metrics required for the decision</h2>
+<p>Do not assess the design only by average latency. Track:</p>
+<p>| Metric                                 | Purpose                              |
+| -------------------------------------- | ------------------------------------ |
+| Preprocessing p50 latency              | Typical additional cost              |
+| Preprocessing p95/p99 latency          | Slow-user experience                 |
+| End-to-end time to first visible event | Perceived responsiveness             |
+| End-to-end time to final answer        | Actual user wait                     |
+| Clarification rate                     | How often the layer interrupts users |
+| Prevented downstream failures          | Value created by validation          |
+| Unsupported-language termination rate  | Whether the gate is useful           |
+| Metadata extraction accuracy           | Enrichment quality                   |
+| Orchestrator success rate              | Downstream impact                    |
+| User correction rate                   | Incorrect inference indicator        |
+| Fail-open rate                         | Reliability of enrichment tools      |
+| Token and model cost per request       | Operational impact                   |</p>
+<h2 id="evaluateresultqualitynotenrichmentvolume">Evaluate result quality, not enrichment volume</h2>
+<p>Success should not mean “more metadata was extracted.”</p>
+<p>It should mean:</p>
+<ul>
+<li>Fewer failed downstream executions</li>
+<li>Fewer incorrect assumptions</li>
+<li>Better answers</li>
+<li>Fewer unnecessary clarification turns</li>
+<li>No regression in existing orchestrator performance</li>
+<li>Acceptable latency increase</li>
+<li>Better user trust and transparency</li>
+</ul>
+<h2 id="phaseonerecommendation">Phase-one recommendation</h2>
+<p>For the initial version:</p>
+<ol>
+<li>Keep the existing orchestrator unchanged.</li>
+<li>Retain the new wrapper or pre-orchestration boundary.</li>
+<li>Implement language validation as a code-controlled skill.</li>
+<li>Add time and location skills only where they are required.</li>
+<li>Run independent skills concurrently.</li>
+<li>Use deterministic parsing before invoking an LLM.</li>
+<li>Terminate only for genuine hard failures.</li>
+<li>Fail open for optional enrichment.</li>
+<li>Use predefined streaming messages.</li>
+<li>Put the whole layer behind a feature flag.</li>
+<li>Compare direct routing, shadow mode, and enabled mode.</li>
+<li>Establish a maximum latency budget before broader rollout.</li>
+</ol>
+<h2 id="longertermrecommendation">Longer-term recommendation</h2>
+<p>The pre-orchestrator can remain an agent conceptually, but its runtime behavior should resemble a <strong>bounded workflow</strong>, not an open-ended autonomous agent.</p>
+<pre><code class="text language-text">Bounded workflow:
+Known skills
+Known order or dependency graph
+Strict timeouts
+Structured outcomes
+Limited model usage
+Explicit termination rules
+Predictable handoff
+</code></pre>
+<p>This provides the architectural separation and rollback strategy the team wants without imposing a full additional agent-reasoning cycle on every request.</p>
+<h2 id="proposeddecisionstatement">Proposed decision statement</h2>
+<blockquote>
+  <p>We will preserve the existing orchestrator and introduce a lightweight preprocessing layer for validation, metadata enrichment, clarification, and user-facing progress. The layer will use deterministic and parallel skill execution by default, invoke an LLM only for ambiguous cases, and fail open when optional enrichment is unavailable. Hard validation must complete before orchestration, while soft enrichment must not unnecessarily block execution. The feature will be measured using end-to-end latency, downstream success, clarification frequency, and enrichment accuracy before full rollout.</p>
+</blockquote>
+<p>The core trade-off is therefore not <strong>pre-orchestrator versus no pre-orchestrator</strong>. It is <strong>a full LLM agent on every request versus a selective, bounded preprocessing workflow</strong>. The second option provides most of the expected quality and risk-reduction benefits with substantially better latency predictability.</p>
+<h2 id="followupquestions">Follow-up questions</h2>
+<ol>
+<li><strong>Execution model:</strong> Which tasks are independent enough to run in parallel, and which have strict data or ordering dependencies requiring sequential execution?</li>
+<li><strong>Decision logic:</strong> What exact criteria will the pre-orchestration classifier use to route requests to the “pause,” “right,” or “US” agent?</li>
+<li><strong>Terminology:</strong> Are “right agent” and “US agent” the intended names, or should these be clarified?</li>
+<li><strong>Classifier output:</strong> Will routing use fixed labels, confidence scores, rules, or a combination?</li>
+<li><strong>Low-confidence handling:</strong> What should happen when the classifier is uncertain—fallback agent, retry, human review, or clarification?</li>
+<li><strong>Prompt reuse:</strong> Will the existing production orchestration prompt be reused exactly, or adapted to work in the pre-orchestration layer?</li>
+<li><strong>Context transfer:</strong> What request context, history, and metadata must be passed from the classifier to the selected agent?</li>
+<li><strong>Smart operation layer:</strong> What conditions identify a smart operation, and why must this decision happen above the current orchestration layer?</li>
+<li><strong>Failure handling:</strong> How will partial failures, timeouts, retries, and duplicate executions be managed during parallel processing?</li>
+<li><strong>MCP hosting:</strong> Does the MCP server need to be public, private, region-specific, autoscaled, or accessible only within the internal network?</li>
+<li><strong>State management:</strong> Will the orchestration workflow be stateless, or must it preserve execution state across agents and tools?</li>
+<li><strong>Success metrics:</strong> How will the new design be evaluated—latency, routing accuracy, cost, completion rate, or production errors?</li>
+</ol>
+<h2 id="recommendations-1">Recommendations</h2>
+<h3 id="1definetheworkflowasadependencygraph">1. Define the workflow as a dependency graph</h3>
+<p>Represent each operation as a node with explicit dependencies:</p>
+<ul>
+<li>Run independent nodes in parallel.</li>
+<li>Run dependent nodes sequentially.</li>
+<li>Merge results only after all required upstream nodes complete.</li>
+</ul>
+<p>This is safer than manually hard-coding parallel and sequential paths.</p>
+<h3 id="2keepthepreorchestrationclassifierlightweight">2. Keep the pre-orchestration classifier lightweight</h3>
+<p>The classifier should only determine:</p>
+<ul>
+<li>Request type</li>
+<li>Target agent</li>
+<li>Execution mode</li>
+<li>Whether smart-operation handling is required</li>
+<li>Confidence level</li>
+</ul>
+<p>Avoid putting full task execution logic into this layer.</p>
+<h3 id="3preservetheexistingpromptbutseparateresponsibilities">3. Preserve the existing prompt, but separate responsibilities</h3>
+<p>Since the production prompt is working well, reuse its core instructions. However, split the architecture conceptually:</p>
+<ul>
+<li><strong>Pre-orchestration:</strong> classification and routing</li>
+<li><strong>Agent orchestration:</strong> planning and execution</li>
+<li><strong>Post-orchestration:</strong> validation, result merging, and error handling</li>
+</ul>
+<p>This reduces regression risk while making the workflow easier to maintain.</p>
+<h3 id="4usestructuredroutingoutput">4. Use structured routing output</h3>
+<p>The classifier should return a validated object similar to:</p>
+<pre><code class="json language-json">{
+  "target_agent": "pause_agent",
+  "execution_mode": "parallel",
+  "is_smart_operation": false,
+  "confidence": 0.94,
+  "reason": "Request requires independent tool calls"
+}
+</code></pre>
+<p>Use a strict schema and reject or repair invalid outputs.</p>
+<h3 id="5addafallbackroute">5. Add a fallback route</h3>
+<p>When confidence is below an agreed threshold, route to the existing orchestration flow rather than making a potentially incorrect specialized decision. This allows gradual rollout without disrupting production.</p>
+<h3 id="6introduceparallelexecutionselectively">6. Introduce parallel execution selectively</h3>
+<p>Start with low-risk operations that:</p>
+<ul>
+<li>Do not modify shared state</li>
+<li>Do not depend on one another’s output</li>
+<li>Are idempotent or safe to retry</li>
+<li>Have clearly defined merge logic</li>
+</ul>
+<p>Keep write operations and state-dependent operations sequential initially.</p>
+<h3 id="7treatsmartoperationsasapolicylayer">7. Treat smart operations as a policy layer</h3>
+<p>Instead of creating another full agent, add a policy or capability-detection layer above orchestration. It should determine whether the request needs the smart-operation flow, then pass control to the existing orchestration system.</p>
+<h3 id="8addobservabilitybeforerollout">8. Add observability before rollout</h3>
+<p>Log:</p>
+<ul>
+<li>Classifier decision</li>
+<li>Confidence</li>
+<li>Selected agent</li>
+<li>Parallel and sequential execution paths</li>
+<li>Tool latency</li>
+<li>Retry count</li>
+<li>Final outcome</li>
+<li>Fallback usage</li>
+</ul>
+<p>This will help identify misrouting and performance bottlenecks.</p>
+<h3 id="9evaluatemcphostingthroughasmallproofofconcept">9. Evaluate MCP hosting through a small proof of concept</h3>
+<p>Compare at least:</p>
+<ul>
+<li>In-process or local deployment</li>
+<li>Private internal service</li>
+<li>Containerized service on the existing platform</li>
+<li>Managed serverless or Kubernetes deployment</li>
+</ul>
+<p>Evaluate authentication, network access, scaling, secrets, latency, monitoring, and failure recovery before selecting the hosting model.</p>
+<h3 id="10rolloutincrementally">10. Roll out incrementally</h3>
+<p>A practical sequence would be:</p>
+<ol>
+<li>Document current orchestration behavior.</li>
+<li>Add the classifier in shadow mode without affecting routing.</li>
+<li>Compare classifier decisions with actual production outcomes.</li>
+<li>Enable routing for a small percentage of traffic.</li>
+<li>Add parallel execution for low-risk tasks.</li>
+<li>Introduce smart-operation detection.</li>
+<li>Finalize the MCP hosting model after load and security testing.</li>
+</ol>
+<p>The discussion reinforces the recommendation, with one important clarification: <strong>do not describe or implement the preprocessing layer as a full agent unless it performs genuinely agentic work.</strong></p>
+<h2 id="concisesummary">Concise Summary</h2>
+<p>The team agrees that preprocessing capabilities are necessary, including:</p>
+<ul>
+<li>Language and entity detection</li>
+<li>User-preference loading</li>
+<li>Location and data-scope validation</li>
+<li>Metadata enrichment</li>
+<li>Clarification and human-feedback handling</li>
+<li>Prevention of invalid or unsafe downstream requests</li>
+</ul>
+<p>The disagreement is primarily about implementation and terminology.</p>
+<p>A full pre-orchestrator agent was challenged because most of these tasks are deterministic preprocessing rather than specialized reasoning. Making it an agent would add unnecessary routing, model calls, latency, complexity, and behavior that differs from the system’s other agents.</p>
+<p>The preferred approach is therefore:</p>
+<ol>
+<li>Use direct application logic for simple deterministic operations.</li>
+<li>Use Python tools or services for structured extraction and validation.</li>
+<li>Use an LLM only when interpretation is genuinely ambiguous.</li>
+<li>Keep the existing orchestrator as the sole routing agent.</li>
+<li>Run independent preprocessing checks in parallel where possible.</li>
+<li>Treat preprocessing as a bounded request-readiness layer, not an autonomous agent.</li>
+</ol>
+<h2 id="doesthepreviousrecommendationstillstand">Does the Previous Recommendation Still Stand?</h2>
+<p><strong>Yes. It still stands and is more strongly supported by this discussion.</strong></p>
+<p>The recommendation was never dependent on adding a second full agent. It proposed a lightweight preprocessing layer that uses deterministic, parallel execution and invokes an LLM only when needed.</p>
+<p>That directly addresses the concerns raised:</p>
+<ul>
+<li>It preserves the existing orchestrator.</li>
+<li>It avoids an additional agent-planning cycle.</li>
+<li>It reduces latency and operational complexity.</li>
+<li>It keeps essential validation before orchestration.</li>
+<li>It supports a clean rollback boundary.</li>
+<li>It allows specialized agent behavior to be introduced later only for tasks that truly require it.</li>
+<li>It prevents simple operations, such as loading preferences or validating scope, from unnecessarily consuming LLM resources.</li>
+</ul>
+<p>The main adjustment should be semantic and architectural:</p>
+<blockquote>
+  <p>Replace “pre-orchestrator agent” with “preprocessing layer,” “request-readiness layer,” or “pre-orchestration pipeline.”</p>
+</blockquote>
+<h2 id="reviseddecisionstatement">Revised Decision Statement</h2>
+<p>We will preserve the existing orchestrator as the system’s primary routing agent and introduce a lightweight request-readiness layer for validation, metadata enrichment, clarification, privacy and scope checks, and user-facing progress.</p>
+<p>This layer will use direct application logic and deterministic tools by default, execute independent checks in parallel, and invoke an LLM only when the request contains genuine ambiguity that cannot be resolved reliably through code.</p>
+<p>Hard validation must complete before orchestration. Optional enrichment must not unnecessarily block execution and should fail open when unavailable. The preprocessing layer will not perform routing or duplicate capabilities already handled by the orchestrator.</p>
+<p>The design will be evaluated using end-to-end latency, time to first response, downstream success rate, clarification frequency, enrichment accuracy, failure-prevention rate, and operational cost before full rollout.</p>
+<p>The core trade-off is not pre-orchestrator versus no pre-orchestrator. It is:</p>
+<p><strong>a full generative agent on every request versus a selective, bounded preprocessing workflow.</strong></p>
+<p>The selective workflow remains the recommended option because it provides the required validation and enrichment benefits without introducing unnecessary agent latency and complexity.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

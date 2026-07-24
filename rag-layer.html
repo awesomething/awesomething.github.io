@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>RAG Layer</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sat, May 09, 2026">Sat, May 09, 2026</time>
+        <h1 class="mar-b-7">RAG Layer</h1>
+    </header>
+    <h2 id="meetingsummary">Meeting summary</h2>
+<p>The team discussed the current state and scope of the Payments help-center chatbot, which reuses much of the existing Marketing and Tech Ops chatbot infrastructure.</p>
+<h3 id="currentstatus">Current status</h3>
+<ul>
+<li>The application is functioning.</li>
+<li>Trenton has the development environment running and is close to completing QA infrastructure.</li>
+<li>Most backend and ingestion components already exist.</li>
+<li>The immediate priority is to complete development and QA—not to design the final production-scale architecture yet.</li>
+</ul>
+<h3 id="remainingtechnicalwork">Remaining technical work</h3>
+<ul>
+<li>Review the application code and make a few content-filtering adjustments.</li>
+<li>Investigate metadata and ingestion issues caused by the move between GitHub tenants.</li>
+<li>Check the ingestion pipeline for silent failures.</li>
+<li>Validate Trenton’s infrastructure work from an application perspective.</li>
+<li>Help the front-end portal team connect to the backend APIs.</li>
+<li>Complete the load balancer-to-Apigee integration, including any required service account creation or allowlisting.</li>
+<li>Confirm whether Model Armor has been configured correctly.</li>
+<li>Create DNS records once dependencies are unblocked.</li>
+<li>Test model alternatives for response quality, cost, and deprecation risk.</li>
+<li>Complete the remaining ATO activities. Network and application penetration testing may be out of scope.</li>
+</ul>
+<h3 id="majorunresolvedissueexpectedtraffic">Major unresolved issue: expected traffic</h3>
+<p>Two very different traffic estimates were discussed.</p>
+<p>One estimate attributed to Sarisha projected:</p>
+<ul>
+<li>10 million total users</li>
+<li>2 million daily active users</li>
+<li>100,000 concurrent users</li>
+<li>10 queries per user per day</li>
+<li>Peaks approaching 10,000 requests per minute</li>
+</ul>
+<p>At that scale, the current solution would require a substantially different production architecture and could generate model and infrastructure costs around $100,000 per month.</p>
+<p>Mark strongly questioned those assumptions. His rough estimate was closer to:</p>
+<ul>
+<li>100,000 portal visitors per month</li>
+<li>Approximately 10,000–30,000 chatbot users per month</li>
+<li>Potentially fewer than 100,000 chatbot users in an entire year</li>
+</ul>
+<p>The traffic assumptions need to be validated before production architecture, capacity planning, or funding decisions can be made.</p>
+<h3 id="costconcerns">Cost concerns</h3>
+<ul>
+<li>Model inference is expected to be the largest operating expense.</li>
+<li>The ingestion process itself is likely inexpensive—potentially only a few dollars per day.</li>
+<li>The current full-repository synchronization could potentially be optimized to ingest only changes, but it is not believed to be a major cost driver.</li>
+<li>Production rollout should not proceed until the business confirms the actual audience, expected usage, and available operating budget.</li>
+</ul>
+<h3 id="agreeddirection">Agreed direction</h3>
+<p>Complete development and QA using the current approach. In parallel, validate the traffic assumptions with Sarisha and determine whether the business case supports the cost and architecture required for a production deployment.</p>
+<h3 id="actionitems">Action items</h3>
+<p>| Owner                        | Action                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- |
+| Sar / business team      | Confirm the source and accuracy of the user, concurrency, and query-volume estimates.          |
+| Mark / engineering           | Review application code, content filtering, metadata handling, and ingestion behavior.         |
+| Trent                      | Finish QA infrastructure and confirm Model Armor and other infrastructure tasks are complete.  |
+| Engineering / infrastructure | Resolve the Apigee and load-balancer connection, including service-account requirements.       |
+| Front-end team               | Validate connectivity to the backend APIs.                                                     |
+| Security / project team      | Complete remaining ATO activities and confirm penetration-testing scope.                       |
+| Architecture / finance       | Produce a production design and cost estimate after realistic usage assumptions are confirmed. |</p>
+<p>This discussion is about replacing a <strong>pre-orchestrator AI agent</strong> with a faster, deterministic <strong>readiness check</strong>.</p>
+<p>The proposed check classifies each request into four outcomes:</p>
+<ol>
+<li><strong>Ready</strong> — continue to the orchestrator.</li>
+<li><strong>Needs clarification</strong> — ask one focused question.</li>
+<li><strong>Not allowed</strong> — return a safe access or policy message.</li>
+<li><strong>Check unavailable or inconclusive</strong> — continue through the normal orchestration flow.</li>
+</ol>
+<p>The main disagreement is about how reliably deterministic code can detect missing information. Simple checks—such as language detection or whether a date-like expression exists—are straightforward. The harder problem is <strong>semantic completeness</strong>. For example, the word “location” may appear in a question without identifying an actual location:</p>
+<blockquote>
+  <p>“Give me the sales at the location.”</p>
+</blockquote>
+<p>A keyword-based checker might conclude that location information is present, even though the request remains ambiguous.</p>
+<p>The emerging compromise is a <strong>hybrid, fail-open design</strong>:</p>
+<ul>
+<li>Use deterministic checks for a small, agreed set of high-confidence requirements, such as location, time range, metric, and access permissions.</li>
+<li>Ask a clarification only when a rule can confidently identify the missing field.</li>
+<li>Do not attempt to solve every ambiguous case in the readiness layer.</li>
+<li>Pass uncertain or complex cases to the orchestrator and its downstream agents.</li>
+<li>Measure the approach using clarification accuracy, false-positive rate, latency, and model-call reduction.</li>
+</ul>
+<p>The strongest architectural principle from the discussion is:</p>
+<blockquote>
+  <p>The readiness check should be a narrow front-door validator, not another general-purpose reasoning agent.</p>
+</blockquote>
+<p>Its goal is not to understand every request fully. Its goal is to cheaply catch common, obvious issues without blocking valid requests or duplicating the orchestrator’s work.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

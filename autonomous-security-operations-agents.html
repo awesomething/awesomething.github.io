@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Autonomous Security Operations Agents</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, December 02, 2022">Fri, December 02, 2022</time>
+        <h1 class="mar-b-7">Autonomous Security Operations Agents</h1>
+    </header>
+    <p>A production-grade multi-agent security investigation system built on GCP using Google Agent Development Kit (ADK) and Gemini. AutoSOC autonomously detects, triages, investigates, remediates, and reports on GCP security findings end to end with no human intervention below the configurable risk threshold.</p>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<p>AutoSOC Architecture</p>
+<p>AutoSOC is composed of seven specialized agents that communicate through GCP-native services. Each agent has a discrete responsibility, a defined input contract, and a defined output contract. No agent has direct knowledge of any other agent's implementation.</p>
+<hr />
+<h2 id="agentpipeline">Agent Pipeline</h2>
+<h3 id="1detectionagent">1. Detection Agent</h3>
+<p>Ingests raw Security Command Center findings from a Pub/Sub subscription. Classifies each finding into a structured <code>Alert</code> with an <code>AlertType</code> enum (<code>PUBLIC_BUCKET</code>, <code>PRIVILEGE_ESCALATION</code>, <code>EXFILTRATION</code>, <code>IAM_ANOMALY</code>, <code>BRUTE_FORCE</code>, <code>MALWARE</code>, <code>NETWORK_ANOMALY</code>), a <code>SeverityLevel</code>, and a unique investigation ID in the format <code>inv-YYYYMMDD-{uuid8}</code>.</p>
+<h3 id="2orchestratoragent">2. Orchestrator Agent</h3>
+<p>Receives the classified alert and creates an <code>Investigation</code> state object in Firestore. Routes the investigation to downstream agents and tracks which agents have completed. Manages the state machine transitions: <code>OPEN</code> -&gt; <code>TRIAGING</code> -&gt; <code>INVESTIGATING</code> -&gt; <code>REMEDIATING</code> -&gt; <code>RESOLVED</code>.</p>
+<h3 id="3triageagent">3. Triage Agent</h3>
+<p>Enriches the alert using Cloud Asset Inventory to retrieve IAM roles held by the principal. Scores severity 1-10 using a weighted formula that combines SCC severity, role sensitivity (owner/editor = +2, BigQuery access = +1, Storage access = +1), and behavioral deviation. Investigations scoring &gt;= 6 route to Threat Intel; below 6 route directly to Forensics.</p>
+<h3 id="4threatintelagent">4. Threat Intel Agent</h3>
+<p>Maps the alert type to MITRE ATT&amp;CK techniques using a structured lookup:</p>
+<ul>
+<li><code>PUBLIC_BUCKET</code> -&gt; T1530 (Data from Cloud Storage)</li>
+<li><code>PRIVILEGE_ESCALATION</code> / <code>IAM_ANOMALY</code> -&gt; T1078 (Valid Accounts)</li>
+<li><code>EXFILTRATION</code> -&gt; T1537 (Transfer Data to Cloud Account)</li>
+<li><code>BRUTE_FORCE</code> -&gt; T1110 (Brute Force)</li>
+</ul>
+<p>Produces a confidence score based on resource name patterns, principal characteristics, and known IOC matches.</p>
+<h3 id="5forensicsagent">5. Forensics Agent</h3>
+<p>Pulls the last 24 hours of Cloud Audit Log entries for the affected resource and principal using the Cloud Logging API. Builds a chronological event timeline. Constructs a blast radius list of resources and principals potentially affected by the incident.</p>
+<h3 id="6remediationagent">6. Remediation Agent</h3>
+<p>Applies a configurable auto-remediation threshold (default: score <= 6 = auto-execute, score > 6 = human approval required). Auto-executed actions include removing public access prevention enforcement on GCS buckets and disabling overprivileged service accounts. High-risk actions trigger a Slack webhook with the investigation ID, severity score, resource, and recommended action.</p>
+<h3 id="7reportingagent">7. Reporting Agent</h3>
+<p>Generates a three-sentence CISO-ready natural language summary using Gemini via Vertex AI. Writes a structured <code>Finding</code> record to BigQuery <code>autosoc_data.findings</code>. Updates the Firestore investigation document to <code>RESOLVED</code> with a resolution timestamp.</p>
+<hr />
+<h2 id="techstack">Tech Stack</h2>
+<p>| Component | Technology |
+|---|---|
+| Agent framework | Google ADK 1.26 |
+| LLM | Gemini 2.5 Flash (ADK UI) / Gemini 2.0 Flash (Vertex AI reporting) |
+| Agent memory | Firestore (investigation state) |
+| Event bus | Cloud Pub/Sub (4 topics, 4 subscriptions) |
+| Data store | BigQuery (findings, baselines, timelines) |
+| Evidence store | Cloud Storage |
+| IAM enrichment | Cloud Asset Inventory API |
+| Audit logs | Cloud Logging API |
+| Human gate | Slack webhook |
+| Dev UI | ADK Web (localhost:8000) |</p>
+<hr />
+<h2 id="gcpinfrastructure">GCP Infrastructure</h2>
+<h3 id="apisenabled">APIs Enabled</h3>
+<p><code>run.googleapis.com</code>, <code>cloudfunctions.googleapis.com</code>, <code>pubsub.googleapis.com</code>, <code>firestore.googleapis.com</code>, <code>bigquery.googleapis.com</code>, <code>securitycenter.googleapis.com</code>, <code>cloudasset.googleapis.com</code>, <code>aiplatform.googleapis.com</code>, <code>logging.googleapis.com</code>, <code>artifactregistry.googleapis.com</code>, <code>storage.googleapis.com</code></p>
+<h3 id="serviceaccountroles">Service Account Roles</h3>
+<p><code>bigquery.dataEditor</code>, <code>bigquery.jobUser</code>, <code>pubsub.editor</code>, <code>datastore.user</code>, <code>logging.viewer</code>, <code>securitycenter.findingsViewer</code>, <code>cloudasset.viewer</code>, <code>run.invoker</code>, <code>aiplatform.user</code>, <code>storage.admin</code></p>
+<h3 id="pubsubtopics">Pub/Sub Topics</h3>
+<p>| Topic | Subscription |
+|---|---|
+| scc-findings-raw | scc-findings-sub |
+| investigation-events | investigation-events-sub |
+| remediation-requests | remediation-requests-sub |
+| findings-complete | findings-complete-sub |</p>
+<h3 id="bigquery">BigQuery</h3>
+<p>Dataset: <code>autosoc_data</code> with tables: <code>findings</code>, <code>baselines</code>, <code>timelines</code></p>
+<h3 id="firestore">Firestore</h3>
+<p>Default database, Native mode, <code>nam5</code> (US multi-region), collection: <code>investigations</code></p>
+<hr />
+<h2 id="setup">Setup</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>Python 3.11+</li>
+<li>GCP project with billing enabled</li>
+<li><code>gcloud</code> CLI authenticated</li>
+<li>ADC configured: <code>gcloud auth application-default login</code></li>
+</ul>
+<h3 id="install">Install</h3>
+<pre><code class="bash language-bash">git clone https://github.com/gbhorne/adk-security-agents.git
+cd adk-security-agents
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+</code></pre>
+<h3 id="configure">Configure</h3>
+<pre><code class="bash language-bash">cp .env.example .env
+# Edit .env with your PROJECT_ID, LOCATION, GCS_EVIDENCE_BUCKET
+# Add GOOGLE_API_KEY from aistudio.google.com/apikey
+</code></pre>
+<h3 id="verifyinfrastructure">Verify Infrastructure</h3>
+<pre><code class="bash language-bash">python -m scripts.verify_autosoc
+</code></pre>
+<p>All checks should return PASS before running the agents.</p>
+<h3 id="runadkwebui">Run ADK Web UI</h3>
+<pre><code class="bash language-bash">adk web .
+</code></pre>
+<p>Open <code>http://localhost:8000</code>, select <code>autosoc_agent</code>, and submit a finding prompt.</p>
+<hr />
+<h2 id="sampleinvestigationprompt">Sample Investigation Prompt</h2>
+<pre><code>Investigate this GCP security finding:
+
+Finding ID: finding-001
+Category: PUBLIC_BUCKET
+Resource: gs://your-bucket-name
+Severity: HIGH
+Principal: your-service-account@your-project.iam.gserviceaccount.com
+
+Run the full investigation through all 6 steps.
+</code></pre>
+<hr />
+<h2 id="supportedfindingcategories">Supported Finding Categories</h2>
+<p>| Category | MITRE Technique | Auto-Remediation |
+|---|---|---|
+| PUBLIC<em>BUCKET | T1530 | Yes (score <= 6) |
+| PRIVILEGE</em>ESCALATION | T1078 | No (always human approval) |
+| IAM<em>ANOMALY | T1078 | Threshold-based |
+| EXFILTRATION | T1537 | No |
+| BRUTE</em>FORCE | T1110 | Threshold-based |
+| MALWARE | T1204 | No |
+| NETWORK_ANOMALY | T1046 | No |</p>
+<hr />
+<h2 id="verification">Verification</h2>
+<pre><code class="bash language-bash">python -m scripts.verify_autosoc
+</code></pre>
+<p>This script checks all infrastructure components and runs a live end-to-end detection test. A full verification pass output is included in <a href="docs/VERIFICATION_PASS.txt"><code>docs/VERIFICATION_PASS.txt</code></a>, confirming 33/33 checks passing across GCP authentication, all 4 Pub/Sub topics and subscriptions, BigQuery dataset and tables, Firestore, Cloud Storage, Vertex AI Gemini, Cloud Asset Inventory, Cloud Logging, all 9 agent module imports, and a live end-to-end detection test.</p>
+<hr />
+<h2 id="repositorystructure">Repository Structure</h2>
+<pre><code>adk-autosoc/
+    autosoc_agent/
+        __init__.py
+        agent.py              # ADK root_agent with 6 tools
+    agents/
+        detection/agent.py
+        orchestrator/agent.py
+        triage/agent.py
+        threat_intel/agent.py
+        forensics/agent.py
+        remediation/agent.py
+        reporting/agent.py
+    shared/
+        config.py             # All constants and configuration
+        models.py             # Pydantic models for all data structures
+        pubsub_client.py      # Pub/Sub publish/subscribe utilities
+    docs/
+        architecture.svg
+        VERIFICATION_PASS.txt
+        QA.md                 # In-depth technical Q&amp;A
+    scripts/
+        verify_autosoc.py
+    requirements.txt
+</code></pre>
+<hr />
+<h2 id="screenshots">Screenshots</h2>
+<h3 id="public_bucketinvestigation">PUBLIC_BUCKET Investigation</h3>
+<p><strong>Step 1: Detection and triage start</strong>
+<img src="docs/screenshots/autosoc_agent_01_detection_triage_start.png" alt="Detection and triage start" /></p>
+<p><strong>Step 2: Triage complete, routing to threat intel</strong>
+<img src="docs/screenshots/autosoc_agent_02_triage_complete_threat_intel.png" alt="Triage complete" /></p>
+<p><strong>Step 3: Forensics complete, routing to remediation</strong>
+<img src="docs/screenshots/autosoc_agent_03_forensics_complete_remediation.png" alt="Forensics complete" /></p>
+<p><strong>Step 4: Report complete - full incident summary</strong>
+<img src="docs/screenshots/autosoc_agent_04_report_complete_incident_summary.png" alt="Report complete" /></p>
+<p><strong>ADK trace: full execution tree with timing</strong>
+<img src="docs/screenshots/autosoc_agent_05_adk_trace_execution_tree.png" alt="ADK trace execution tree" /></p>
+<h3 id="privilege_escalationinvestigation">PRIVILEGE_ESCALATION Investigation</h3>
+<p><strong>Detection and triage - CRITICAL severity</strong>
+<img src="docs/screenshots/autosoc_agent_06_priv_escalation_detection_triage.png" alt="Privilege escalation detection" /></p>
+<p><strong>Triage score 8/10 - MITRE T1078 mapped</strong>
+<img src="docs/screenshots/autosoc_agent_07_priv_escalation_triage_score8_mitre_t1078.png" alt="Triage score 8" /></p>
+<p><strong>Forensics - lateral movement blast radius</strong>
+<img src="docs/screenshots/autosoc_agent_08_priv_escalation_forensics_lateral_movement.png" alt="Forensics lateral movement" /></p>
+<p><strong>Reporting - CISO-ready summary</strong>
+<img src="docs/screenshots/autosoc_agent_09_priv_escalation_report_ciso_summary.png" alt="CISO summary" /></p>
+<p><strong>ADK trace - 43 second resolution</strong>
+<img src="docs/screenshots/autosoc_agent_10_priv_escalation_trace_43sec.png" alt="Trace 43 seconds" /></p>
+<hr />
+<h2 id="investigationexamples">Investigation Examples</h2>
+<h3 id="public_bucketscore710">PUBLIC_BUCKET (Score 7/10)</h3>
+<ul>
+<li>MITRE: T1530 (Data from Cloud Storage)</li>
+<li>Blast radius: all objects publicly accessible, service accounts with storage access implicated</li>
+<li>Remediation: human approval requested (score &gt; 6)</li>
+<li>Resolution time: 28 seconds</li>
+</ul>
+<h3 id="privilege_escalationscore810">PRIVILEGE_ESCALATION (Score 8/10)</h3>
+<ul>
+<li>MITRE: T1078 (Valid Accounts)</li>
+<li>Blast radius: elevated permissions allow lateral movement, all resources accessible by principal at risk</li>
+<li>Remediation: human approval requested (CRITICAL severity)</li>
+<li>Resolution time: 43 seconds</li>
+</ul>
+<hr />
+<h2 id="qa">Q&amp;A</h2>
+<p>See <a href="docs/QA.md">docs/QA.md</a> for in-depth answers covering ADK vs Vertex AI Agent Builder, inter-agent communication design, human-in-the-loop architecture, Firestore vs BigQuery, severity scoring, failure recovery, production deployment, cost, and security controls.</p>
+<hr />
+<h2 id="disclaimer">Disclaimer</h2>
+<p>Built as a portfolio project for educational and demonstration purposes. Not intended for production use without further hardening, security review, and compliance validation.</p>
+<hr />
+<h2 id="license">License</h2>
+<p>MIT</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
