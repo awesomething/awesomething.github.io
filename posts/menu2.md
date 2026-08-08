@@ -360,3 +360,53 @@ Create a troubleshooting guide covering issues such as:
 ### 10. Confirm Understanding with a Practice Exercise
 
 Ask each team member to create one sample item and verify that it appears correctly on the menu. This will help confirm that they understand the relationship between groups, sections, items, locations, prices, and availability.
+
+
+## Menu Search and Reporting
+
+1. **Use the menu hierarchy as the source of truth:**
+   **Menu Group → Section → Menu Item**
+
+2. **Resolve the user’s term before querying.** Determine whether “beer,” “drinks,” or another term refers to:
+
+   * A menu group
+   * A section
+   * A specific menu item
+
+3. **Aggregate all child items for category questions.**
+   For “How many beers did I serve yesterday?”, if Beer is a section, total the sales of every menu item assigned to that section.
+
+4. **Use account ID and location ID first.** Then filter by group, section, or item to reduce irrelevant matches.
+
+5. **Do not rely only on semantic search.** Use semantic search to interpret the request, then use structured menu IDs and hierarchy relationships for the final query.
+
+6. **Handle inconsistent merchant naming.** The same concept may appear in multiple sections or groups, such as Drinks under Breakfast and Dinner. Matching should use IDs and parent relationships, not names alone.
+
+7. **Request clear data from ATL.** The required dataset or API should return:
+
+   * Account and location IDs
+   * Group ID and name
+   * Section ID and name
+   * Item ID and name
+   * Parent-child relationships
+   * Availability by location
+   * Effective dates or active status
+
+8. **Build a category-resolution service.** It should return the matched entity type, confidence, parent hierarchy, and all relevant item IDs.
+
+## Immediate Next Steps
+
+* Document the exact menu hierarchy and data fields required from ATL.
+* Follow up on the existing ATL email and schedule a working session if no response is received.
+* Test category aggregation using Beer, Drinks, Breakfast, and one specific item.
+* Define how ambiguity will be handled when the same section name exists under multiple groups.
+* Separate account memory and user-preference memory discussions into distinct sessions.
+
+## API and Penetration Testing
+
+* Prioritize streaming changes because they are more likely to require penetration testing.
+* Confirm with security and Apigee whether new memory APIs can be covered under the existing API pattern or require separate testing.
+* Reserve a stable testing environment early; penetration testing may require two to three weeks plus queue time.
+* Avoid freezing the main development environment. Prefer a dedicated test instance where practical.
+* Consider status updates instead of full streaming only if that still meets the product experience and reduces implementation or security risk.
+* Reassess the October timeline after confirming the penetration-testing scope and environment plan.
