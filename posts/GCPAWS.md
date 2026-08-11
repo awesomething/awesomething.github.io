@@ -1,6 +1,6 @@
 ---
 title: Args
-date: 2018-04-04
+date: 2019-04-04
 ---
 
 At this point, the AWS side is making a legitimate architectural argument, so I would avoid defending GCP purely on “we already built it.” The stronger contribution is to force the team to define the **decision criteria** and distinguish strategic architecture from migration cost.
