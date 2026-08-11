@@ -1,7 +1,4 @@
----
-title: MetaGig - Urgent Site Plan Correction Plan
-date: 2026-08-11
----
+
 
 # MetaGig - Urgent Site Plan Correction Plan
 
