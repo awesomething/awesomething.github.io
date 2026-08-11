@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs -I{} sh -c 'head -n 15 \"{}\" | grep -q \"^title:\" || echo \"MISSING TITLE: {}\"')"
+    ]
+  }
+}

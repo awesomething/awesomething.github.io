@@ -1,3 +1,8 @@
+---
+title: TaskMarket End-to-End Work Simulation
+date: 2026-08-04
+---
+
 TaskMarket exposes public task discovery separately from wallet-signed, payment-gated marketplace actions, making a read-only simulation practical. ChatGPT Work is designed for longer, multi-step research and finished deliverables.
 
 :::wri([Taskmarket][1])TaskMarket End-to-End Work Simulation

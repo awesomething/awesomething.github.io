@@ -1,3 +1,8 @@
+---
+title: MetaGig - Urgent Site Plan Correction Plan
+date: 2026-08-11
+---
+
 # MetaGig - Urgent Site Plan Correction Plan
 
 **Immediate outcome:** Submit a complete, corrected site-plan package through Accela and notify the Site Development Administrator.

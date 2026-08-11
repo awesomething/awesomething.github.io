@@ -1,3 +1,8 @@
+---
+title: AI-Assisted Site Plan Solution
+date: 2026-08-11
+---
+
 # AI-Assisted Site Plan Solution
 ### Proposed for: Prospective Client
 ### Prepared by: [Your Name / Company]
