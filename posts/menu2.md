@@ -1,9 +1,9 @@
 ---
-title: Menu Agent
+title: Eat Agent
 date: 2025-09-10
 ---
 
-## Menu Agent — Key Takeaways
+## Key Takeaways
 
 ### Core menu hierarchy
 

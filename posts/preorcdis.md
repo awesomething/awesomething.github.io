@@ -3,7 +3,7 @@ title: Agent trade offs
 date: 2025-06-12
 ---
 
-# Meeting Summary: Agent Status and Friendly Streaming Messages
+# Agent Status and Friendly Streaming Messages
 
 ## Executive Summary
 
