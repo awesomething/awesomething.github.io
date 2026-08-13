@@ -15,7 +15,11 @@
       "Bash(awk 'NR==105' posts/andNg.md)",
       "Bash(grep -bo '\\\\\\\\<Transcript>Transcript: \"' /c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/line105.txt)",
       "Bash(tail -c 300 /c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/line105.txt)",
-      "Bash(grep -v '\\\\.md$')"
+      "Bash(grep -v '\\\\.md$')",
+      "Bash(python3 -c \"import yaml; print\\('pyyaml ok'\\)\")",
+      "Bash(python -c \"import yaml; print\\('pyyaml ok'\\)\")",
+      "Bash(python \"/c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/check_fm.py\")",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }
