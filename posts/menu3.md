@@ -1,3 +1,8 @@
+---
+title: "Ingredient Context and Modifiers"
+date: 2024-08-12
+---
+
 ## Summary
 
 The discussion clarified how **ingredient context, modifiers, and miscellaneous/open items** work together in the POS configuration.

@@ -1,3 +1,8 @@
+---
+title: "Andrew Ng's 2-Hour Course on Graph Engineering: 1 Prompt to 100 Agents"
+date: 2026-08-12
+---
+
 ### Summary: **Andrew Ng's 2-hour course covering graph engineering. 1 prompt → 100 agents → loops → graphs**
 
 * **(00:00–03:24) Agentic workflows outperform one-shot prompting**

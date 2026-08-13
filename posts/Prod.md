@@ -1,5 +1,5 @@
 ---
-title: Mastering Productivity: Tips to Get More Done in Less Time
+title: "Mastering Productivity: Tips to Get More Done in Less Time"
 date: 2026-07-27
 ---
 
