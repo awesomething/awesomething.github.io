@@ -51,7 +51,7 @@ Learn more on Glasp: [https://glasp.co/reader?url=https%3A%2F%2Fwww.youtube.com%
 
 [1]: https://glasp.co/youtube/dIb-DujRNEo?utm_source=chatgpt.com "How to Build Agentic AI Apps With LangGraph and MCP | Glasp"
 
-## Full Transcript
+## Detailed Transcript
 
 #### (00:00–03:24) Agentic workflows outperform one-shot prompting
 
