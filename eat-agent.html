@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Eat Agent</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, September 10, 2025">Wed, September 10, 2025</time>
+        <h1 class="mar-b-7">Eat Agent</h1>
+    </header>
+    <h2 id="keytakeaways">Key Takeaways</h2>
+<h3 id="coremenuhierarchy">Core menu hierarchy</h3>
+<p>The required structure is:</p>
+<p><strong>Menu Group → Section → Item</strong></p>
+<p>Example:</p>
+<p><strong>Food → Soups and Salads → Caesar Salad</strong></p>
+<p>An item will not appear on the point of sale unless:</p>
+<ul>
+<li>The item is assigned to a section.</li>
+<li>The section is assigned to a menu group.</li>
+<li>The item is enabled for the correct location.</li>
+<li>The correct channel, such as in-store or online, is enabled.</li>
+</ul>
+<p>A name and price alone are not enough.</p>
+<h3 id="menugroupsandsections">Menu groups and sections</h3>
+<p>Menu configuration depends on how the merchant organizes the restaurant.</p>
+<p>A simple merchant may use:</p>
+<ul>
+<li>Group: Food</li>
+<li>Sections: Food and Drinks</li>
+</ul>
+<p>A more detailed merchant may use:</p>
+<ul>
+<li>Groups: Breakfast, Lunch, Dinner, Happy Hour</li>
+<li>Sections: Burgers, Salads, Soups, Drinks, Appetizers</li>
+</ul>
+<p>The agent should not assume one standard structure. It should inspect or ask how the merchant wants customers and staff to navigate the menu.</p>
+<h3 id="multilocationbehavior">Multi-location behavior</h3>
+<p>For multi-location accounts:</p>
+<ul>
+<li>The account can have a shared menu.</li>
+<li>Shared items should generally be managed from the <strong>Account Menu</strong>.</li>
+<li>An item may have different prices by location.</li>
+<li>Availability may differ by location.</li>
+<li>Online and in-store availability may be configured separately.</li>
+<li>A location-specific item can be created, but excessive location-level editing may make menu management confusing.</li>
+</ul>
+<p>The recommended default is to manage common items at the account level and apply location-specific overrides where needed.</p>
+<hr />
+<h2 id="menuagentresponsibilities">Menu Agent Responsibilities</h2>
+<p>The Menu Agent should:</p>
+<ol>
+<li>Create and maintain menu groups, sections, and items.</li>
+<li>Validate the full menu hierarchy before publishing.</li>
+<li>Assign items to the correct sections.</li>
+<li>Confirm that every section belongs to a group.</li>
+<li>Configure prices by location.</li>
+<li>Configure online and in-store availability.</li>
+<li>Distinguish between shared and location-specific items.</li>
+<li>Detect incomplete or hidden menu items.</li>
+<li>Preview or verify how the admin configuration appears on the POS.</li>
+<li>Report configuration issues in plain language.</li>
+</ol>
+<hr />
+<h2 id="recommendedagentvalidationrules">Recommended Agent Validation Rules</h2>
+<p>Before marking an item as ready, the agent should verify:</p>
+<pre><code class="text language-text">Item name exists
+AND price exists
+AND section is assigned
+AND section belongs to a group
+AND at least one location is assigned
+AND at least one sales channel is enabled
+</code></pre>
+<p>For multi-location accounts, it should also verify:</p>
+<pre><code class="text language-text">Each selected location has a valid price
+Availability matches the intended location
+In-store and online settings are intentional
+Shared items are managed at the account level
+</code></pre>
+<h3 id="suggestederrormessages">Suggested error messages</h3>
+<ul>
+<li><strong>Missing section:</strong> “This item will not appear on the menu because it is not assigned to a section.”</li>
+<li><strong>Section missing group:</strong> “This section is not attached to a menu group, so its items will not appear on the POS.”</li>
+<li><strong>No location:</strong> “This item exists at the account level but is not available at any location.”</li>
+<li><strong>No sales channel:</strong> “This item is not enabled for in-store or online ordering.”</li>
+<li><strong>Location-only item:</strong> “This item is managed only at one location and may be difficult to maintain across the account.”</li>
+<li><strong>Missing location price:</strong> “A price has not been configured for one or more enabled locations.”</li>
+</ul>
+<hr />
+<h2 id="recommendedagentworkflow">Recommended Agent Workflow</h2>
+<h3 id="1understandthemerchantstructure">1. Understand the merchant structure</h3>
+<p>Determine:</p>
+<ul>
+<li>Single-location or multi-location account</li>
+<li>Desired menu groups</li>
+<li>Desired sections</li>
+<li>Locations where the item should be sold</li>
+<li>In-store, online, or both</li>
+<li>Shared or location-specific item</li>
+<li>Same price or different prices by location</li>
+</ul>
+<h3 id="2buildorselectthehierarchy">2. Build or select the hierarchy</h3>
+<p>The agent should either:</p>
+<ul>
+<li>Select an existing group and section, or</li>
+<li>Create the required group and section first.</li>
+</ul>
+<p>It should never create an unassigned item unless it is intentionally saved as a draft.</p>
+<h3 id="3configuretheitem">3. Configure the item</h3>
+<p>Capture:</p>
+<ul>
+<li>Item name</li>
+<li>Description</li>
+<li>Base price</li>
+<li>Location-specific prices</li>
+<li>Section</li>
+<li>Menu group</li>
+<li>Location assignment</li>
+<li>Online availability</li>
+<li>In-store availability</li>
+<li>Optional modifiers or ingredients</li>
+</ul>
+<h3 id="4validatebeforepublishing">4. Validate before publishing</h3>
+<p>Run hierarchy, pricing, location, and channel checks.</p>
+<h3 id="5previewtheresult">5. Preview the result</h3>
+<p>Show a side-by-side summary:</p>
+<p>| Admin configuration       | POS result                     |
+| ------------------------- | ------------------------------ |
+| Group: Food               | Food tab or menu               |
+| Section: Soups and Salads | Soups and Salads category      |
+| Item: Caesar Salad        | Visible item under the section |
+| In-store enabled          | Appears on POS                 |
+| Online disabled           | Does not appear online         |</p>
+<h3 id="6returnacompletionreport">6. Return a completion report</h3>
+<p>Example:</p>
+<pre><code class="text language-text">Menu item created successfully.
+
+Item: Caesar Salad
+Group: Food
+Section: Soups and Salads
+Locations: Downtown, Airport
+In-store: Enabled at both locations
+Online: Enabled at Downtown only
+Price:
+- Downtown: $12.00
+- Airport: $14.00
+
+Validation: Passed
+POS visibility: Expected to appear under Food &gt; Soups and Salads
+</code></pre>
+<hr />
+<h2 id="nextsteps">Next Steps</h2>
+<ol>
+<li>Create a demo menu with at least one group, two sections, and several items.</li>
+<li>Document which menu properties are account-level versus location-level.</li>
+<li>Define the Menu Agent’s required inputs and default assumptions.</li>
+<li>Implement hierarchy and visibility validation rules.</li>
+<li>Add support for location-specific prices and channel availability.</li>
+<li>Produce a POS preview or a clear “where this item will appear” summary.</li>
+<li>Add a diagnostic mode that identifies why an existing item is not visible.</li>
+<li>Test these scenarios:</li>
+</ol>
+<ul>
+<li>Item with no section</li>
+<li>Section with no group</li>
+<li>Item enabled at only one location</li>
+<li>Different prices by location</li>
+<li>Online-only item</li>
+<li>In-store-only item</li>
+<li>Shared item edited from the account level</li>
+<li>Location-specific item created from a single location</li>
+</ul>
+<h2 id="suggestedmenuagentobjective">Suggested Menu Agent Objective</h2>
+<blockquote>
+  <p>The Menu Agent manages restaurant menu configuration across groups, sections, items, locations, prices, and sales channels. It ensures that every item is correctly structured and visible on the intended POS or online menu, while preventing incomplete, hidden, duplicated, or incorrectly assigned menu records.</p>
+</blockquote>
+<p>https://schaeferscanalhouse.hrpos.heartland.us/menu</p>
+<h2 id="followupquestions">Follow-Up Questions</h2>
+<h3 id="menustructure">Menu Structure</h3>
+<ol>
+<li>Is the correct order <strong>Menu Group → Section → Item</strong>?</li>
+<li>Does every item need to be assigned to a section before it appears on the point-of-sale menu?</li>
+<li>Does every section also need to be assigned to a menu group?</li>
+<li>Can one section belong to more than one menu group?</li>
+<li>Can one item appear in multiple sections?</li>
+<li>What happens if an item has a price but no section?</li>
+<li>Is there a warning in the admin portal when an item or section is not properly assigned?</li>
+</ol>
+<h3 id="groupsandsections">Groups and Sections</h3>
+<ol start="8">
+<li>What are some recommended ways to organize groups and sections?</li>
+<li>Should groups represent meal periods, such as Breakfast, Lunch, and Dinner?</li>
+<li>Should sections represent categories, such as Burgers, Soups, Salads, and Drinks?</li>
+<li>Is it acceptable for a restaurant to have only one group, such as “Food”?</li>
+<li>How does the group and section structure appear on the actual point-of-sale screen?</li>
+<li>Can we see a side-by-side example of the admin setup and the customer-facing or point-of-sale menu?</li>
+</ol>
+<h3 id="multiplelocations">Multiple Locations</h3>
+<ol start="14">
+<li>For a multi-location account, is the main menu shared across all locations?</li>
+<li>Are menu groups and sections shared across locations, or can each location organize them differently?</li>
+<li>Can the same item have a different price at each location?</li>
+<li>Can an item be available at one location but unavailable at another?</li>
+<li>Can availability be set separately for in-store and online ordering?</li>
+<li>What is the best way to create an item that is only offered at one location?</li>
+<li>Should all shared menu changes be made from the <strong>Account Menu</strong> rather than from an individual location?</li>
+<li>If someone creates an item from an individual location, will it automatically appear at the account level?</li>
+<li>How can we quickly identify which locations currently offer an item?</li>
+</ol>
+<h3 id="editingandmaintenance">Editing and Maintenance</h3>
+<ol start="23">
+<li>Who should have permission to create or update menu groups, sections, and items?</li>
+<li>Is there a way to preview the menu before publishing changes?</li>
+<li>Do menu changes take effect immediately, or is there a publishing or syncing step?</li>
+<li>Can we temporarily hide an item without deleting it?</li>
+<li>What is the safest process for removing an item that is no longer sold?</li>
+<li>Is there an audit history showing who changed an item, price, section, or location assignment?</li>
+<li>Are there reports that identify items that are missing a section, group, price, or location?</li>
+<li>What are the most common setup mistakes new users make?</li>
+</ol>
+<h2 id="recommendations">Recommendations</h2>
+<h3 id="1teachthemenuhierarchyfirst">1. Teach the Menu Hierarchy First</h3>
+<p>Use one simple rule throughout the training:</p>
+<p><strong>Group → Section → Item</strong></p>
+<p>Example:</p>
+<p><strong>Lunch → Burgers → Cheeseburger</strong></p>
+<p>Explain that an item will not appear on the point-of-sale menu unless:</p>
+<ul>
+<li>The item is assigned to a section.</li>
+<li>The section is assigned to a group.</li>
+<li>The item is enabled for the correct location and ordering channel.</li>
+</ul>
+<h3 id="2provideasidebysidedemonstration">2. Provide a Side-by-Side Demonstration</h3>
+<p>Show the admin portal on one side and the resulting point-of-sale menu on the other. During the demonstration:</p>
+<ul>
+<li>Create a menu group.</li>
+<li>Create a section and attach it to the group.</li>
+<li>Create an item and attach it to the section.</li>
+<li>Add the price.</li>
+<li>Enable it for a location.</li>
+<li>Show where it appears on the point of sale.</li>
+</ul>
+<p>Also demonstrate what happens when the section or group assignment is missing.</p>
+<h3 id="3useasimpletrainingexample">3. Use a Simple Training Example</h3>
+<p>Build a small demo menu instead of using a large live menu.</p>
+<p>Example:</p>
+<ul>
+<li><strong>Group:</strong> Food</li>
+<li><strong>Sections:</strong> Burgers, Soups and Salads, Drinks</li>
+<li><strong>Items:</strong> Cheeseburger, Tomato Soup, Caesar Salad, Soda</li>
+</ul>
+<p>For a multi-location example, use two locations and give one item different prices at each location.</p>
+<h3 id="4manageshareditemsfromtheaccountmenu">4. Manage Shared Items from the Account Menu</h3>
+<p>For multi-location merchants, make the <strong>Account Menu</strong> the main place for creating and editing shared items. This reduces duplicate items and makes location-specific pricing and availability easier to manage.</p>
+<p>Only create an item directly within a location when it is truly unique to that location.</p>
+<h3 id="5establishastandardnamingstructure">5. Establish a Standard Naming Structure</h3>
+<p>Use consistent names for groups, sections, and items. Avoid vague names such as “Food 1,” “New Section,” or “Test Item.”</p>
+<p>Recommended examples:</p>
+<ul>
+<li>Groups: Breakfast, Lunch, Dinner, Happy Hour</li>
+<li>Sections: Burgers, Appetizers, Salads, Beverages</li>
+<li>Items: Classic Cheeseburger, Caesar Salad, Iced Tea</li>
+</ul>
+<h3 id="6createaprepublishchecklist">6. Create a Pre-Publish Checklist</h3>
+<p>Before considering an item complete, confirm:</p>
+<ul>
+<li>The item has a clear name.</li>
+<li>The item has a price.</li>
+<li>The item is assigned to a section.</li>
+<li>The section is assigned to a group.</li>
+<li>The correct locations are selected.</li>
+<li>In-store and online availability are correctly set.</li>
+<li>Any location-specific prices are entered.</li>
+<li>The item has been previewed or tested on the point of sale.</li>
+</ul>
+<h3 id="7clarifysharedversuslocationspecificsettings">7. Clarify Shared Versus Location-Specific Settings</h3>
+<p>Provide a simple reference chart explaining which settings are:</p>
+<ul>
+<li>Shared across the account.</li>
+<li>Configurable by location.</li>
+<li>Configurable by ordering channel.</li>
+<li>Best edited from the Account Menu.</li>
+<li>Best edited from the individual location.</li>
+</ul>
+<h3 id="8useadedicateddemoaccount">8. Use a Dedicated Demo Account</h3>
+<p>Prepare a multi-location demo account before future training sessions. The demo should already contain:</p>
+<ul>
+<li>At least two locations.</li>
+<li>Multiple groups and sections.</li>
+<li>Shared items.</li>
+<li>One location-only item.</li>
+<li>Different prices by location.</li>
+<li>Different in-store and online availability settings.</li>
+</ul>
+<h3 id="9documentcommonproblems">9. Document Common Problems</h3>
+<p>Create a troubleshooting guide covering issues such as:</p>
+<ul>
+<li>Item does not appear on the point of sale.</li>
+<li>Item has no section.</li>
+<li>Section has no group.</li>
+<li>Item is not enabled for the location.</li>
+<li>Item is enabled online but not in-store.</li>
+<li>Incorrect location price is displaying.</li>
+<li>Duplicate items were created at different levels.</li>
+</ul>
+<h3 id="10confirmunderstandingwithapracticeexercise">10. Confirm Understanding with a Practice Exercise</h3>
+<p>Ask each team member to create one sample item and verify that it appears correctly on the menu. This will help confirm that they understand the relationship between groups, sections, items, locations, prices, and availability.</p>
+<h2 id="menusearchandreporting">Menu Search and Reporting</h2>
+<ol>
+<li><p><strong>Use the menu hierarchy as the source of truth:</strong>
+<strong>Menu Group → Section → Menu Item</strong></p></li>
+<li><p><strong>Resolve the user’s term before querying.</strong> Determine whether “beer,” “drinks,” or another term refers to:</p></li>
+</ol>
+<ul>
+<li>A menu group</li>
+<li>A section</li>
+<li>A specific menu item</li>
+</ul>
+<ol>
+<li><p><strong>Aggregate all child items for category questions.</strong>
+For “How many beers did I serve yesterday?”, if Beer is a section, total the sales of every menu item assigned to that section.</p></li>
+<li><p><strong>Use account ID and location ID first.</strong> Then filter by group, section, or item to reduce irrelevant matches.</p></li>
+<li><p><strong>Do not rely only on semantic search.</strong> Use semantic search to interpret the request, then use structured menu IDs and hierarchy relationships for the final query.</p></li>
+<li><p><strong>Handle inconsistent merchant naming.</strong> The same concept may appear in multiple sections or groups, such as Drinks under Breakfast and Dinner. Matching should use IDs and parent relationships, not names alone.</p></li>
+<li><p><strong>Request clear data from ATL.</strong> The required dataset or API should return:</p></li>
+</ol>
+<ul>
+<li>Account and location IDs</li>
+<li>Group ID and name</li>
+<li>Section ID and name</li>
+<li>Item ID and name</li>
+<li>Parent-child relationships</li>
+<li>Availability by location</li>
+<li>Effective dates or active status</li>
+</ul>
+<ol>
+<li><strong>Build a category-resolution service.</strong> It should return the matched entity type, confidence, parent hierarchy, and all relevant item IDs.</li>
+</ol>
+<h2 id="immediatenextsteps">Immediate Next Steps</h2>
+<ul>
+<li>Document the exact menu hierarchy and data fields required from ATL.</li>
+<li>Follow up on the existing ATL email and schedule a working session if no response is received.</li>
+<li>Test category aggregation using Beer, Drinks, Breakfast, and one specific item.</li>
+<li>Define how ambiguity will be handled when the same section name exists under multiple groups.</li>
+<li>Separate account memory and user-preference memory discussions into distinct sessions.</li>
+</ul>
+<h2 id="apiandpenetrationtesting">API and Penetration Testing</h2>
+<ul>
+<li>Prioritize streaming changes because they are more likely to require penetration testing.</li>
+<li>Confirm with security and Apigee whether new memory APIs can be covered under the existing API pattern or require separate testing.</li>
+<li>Reserve a stable testing environment early; penetration testing may require two to three weeks plus queue time.</li>
+<li>Avoid freezing the main development environment. Prefer a dedicated test instance where practical.</li>
+<li>Consider status updates instead of full streaming only if that still meets the product experience and reduces implementation or security risk.</li>
+<li>Reassess the October timeline after confirming the penetration-testing scope and environment plan.</li>
+</ul>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

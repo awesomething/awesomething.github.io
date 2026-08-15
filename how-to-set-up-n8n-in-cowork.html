@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>How to set up n8n in cowork</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Thu, September 11, 2025">Thu, September 11, 2025</time>
+        <h1 class="mar-b-7">How to set up n8n in cowork</h1>
+    </header>
+    <p>Step 1 — Get your n8n API key
+Go to workflow.videobook.ai → Settings → API → Create API Key. Copy it immediately (shown once).
+Step 2 — Connect n8n in Cowork
+Claude app → Settings → Connectors → search "n8n" → Connect → paste the API key.
+This gives you 3 tools: search<em>workflows, get</em>workflow<em>details, execute</em>workflow. That's it — the registry connector can't create workflows.
+Step 3 — Store the key for bash
+Create a .env file in your workspace folder with just the key:
+YOUR<em>N8N</em>API<em>KEY</em>HERE
+Upload it to your connected folder once. Bash reads it with $(cat .env | tr -d '[:space:]') whenever needed.
+Step 4 — To CREATE workflows (the workaround)
+Since the registry connector has no create_workflow, the method that actually works is:</p>
+<p>I navigate Chrome to your n8n instance (already logged in from your browser session)
+I use javascript_tool to POST the workflow JSON directly to /api/v1/workflows using the key</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

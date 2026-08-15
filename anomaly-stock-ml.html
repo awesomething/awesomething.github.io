@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Anomaly Stock ML</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sun, December 22, 2024">Sun, December 22, 2024</time>
+        <h1 class="mar-b-7">Anomaly Stock ML</h1>
+    </header>
+    <hr />
+<p>jupytext:
+  text<em>representation:
+    extension: .md
+    format</em>name: myst
+    format<em>version: "0.13"
+    jupytext</em>version: 1.16.4
+kernelspec:
+  display_name: Python 3
+  language: python</p>
+<h2 id="namepython3">  name: python3</h2>
+<h1 id="stockindicatorsandemaalertengine">Stock Indicators and EMA Alert Engine</h1>
+<p>This notebook calculates common stock-market indicators and shows how the same
+logic can be adapted to merchant metrics such as net revenue, ticket count, and
+average ticket.</p>
+<h2 id="objectives">Objectives</h2>
+<p>By the end of this notebook, you will be able to:</p>
+<ul>
+<li>Calculate simple and exponential moving averages.</li>
+<li>Calculate MACD, RSI, and Bollinger Bands.</li>
+<li>Measure deviation from an EMA baseline.</li>
+<li>Create persistent anomaly alerts.</li>
+<li>Visualize price and indicator trends.</li>
+<li>Reuse the approach for business-performance metrics.</li>
+</ul>
+<h2 id="1setup">1. Setup</h2>
+<p>```{code-cell} ipython3
+from <strong>future</strong> import annotations</p>
+<p>import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt</p>
+<p>pd.set<em>option("display.max</em>columns", 50)
+pd.set_option("display.width", 120)</p>
+<pre><code>## 2. Create or load price data
+
+The next cell creates sample daily price data so the notebook can run without
+an external file.
+
+Replace this cell with the CSV-loading example below when real data is
+available.
+</code></pre>
+<p>{code-cell} ipython3
+rng = np.random.default_rng(seed=42)</p>
+<p>dates = pd.date<em>range("2025-01-01", periods=260, freq="B")
+daily</em>returns = rng.normal(loc=0.0004, scale=0.015, size=len(dates))</p>
+<p>close = 100 * np.cumprod(1 + daily<em>returns)
+high = close * (1 + rng.uniform(0.001, 0.02, len(dates)))
+low = close * (1 - rng.uniform(0.001, 0.02, len(dates)))
+volume = rng.integers(500</em>000, 3<em>000</em>000, len(dates))</p>
+<p>prices = pd.DataFrame(
+    {
+        "Close": close,
+        "High": high,
+        "Low": low,
+        "Volume": volume,
+    },
+    index=dates,
+)</p>
+<p>prices.index.name = "Date"
+prices.head()</p>
+<pre><code>### Optional: load a CSV instead
+
+The CSV should contain at least `Date` and `Close` columns.
+</code></pre>
+<p>{code-cell} ipython3</p>
+<h1 id="uncommenttoloadrealdata">Uncomment to load real data.</h1>
+<p>#</p>
+<h1 id="pricespdread_csv">prices = pd.read_csv(</h1>
+<h1 id="stock_pricescsv">"stock_prices.csv",</h1>
+<h1 id="parse_datesdate">parse_dates=["Date"],</h1>
+<h1 id="index_coldate">index_col="Date",</h1>
+<h1 id="">)</h1>
+<p>#</p>
+<h1 id="pricespricessort_index">prices = prices.sort_index()</h1>
+<h1 id="priceshead">prices.head()</h1>
+<pre><code>## 3. Indicator function
+</code></pre>
+<p>{code-cell} ipython3
+def add<em>stock</em>indicators(
+    data: pd.DataFrame,
+    price_column: str = "Close",
+) -&gt; pd.DataFrame:
+    """
+    Add common technical indicators to stock-price data.</p>
+<pre><code>Required column:
+    Close, or the column supplied through price_column.
+
+Optional columns:
+    High, Low, Volume.
+
+Parameters
+----------
+data:
+    Input DataFrame indexed by date or time.
+price_column:
+    Name of the price column used for calculations.
+
+Returns
+-------
+pd.DataFrame
+    A copy of the original data with indicator columns added.
+"""
+if price_column not in data.columns:
+    raise ValueError(f"Missing required column: {price_column}")
+
+df = data.copy()
+close = pd.to_numeric(df[price_column], errors="coerce")
+
+if close.isna().all():
+    raise ValueError(f"Column {price_column!r} contains no numeric values.")
+
+# Simple moving averages
+df["SMA_20"] = close.rolling(window=20, min_periods=20).mean()
+df["SMA_50"] = close.rolling(window=50, min_periods=50).mean()
+df["SMA_200"] = close.rolling(window=200, min_periods=200).mean()
+
+# Exponential moving averages
+df["EMA_12"] = close.ewm(span=12, adjust=False).mean()
+df["EMA_20"] = close.ewm(span=20, adjust=False).mean()
+df["EMA_26"] = close.ewm(span=26, adjust=False).mean()
+df["EMA_50"] = close.ewm(span=50, adjust=False).mean()
+
+# MACD
+df["MACD"] = df["EMA_12"] - df["EMA_26"]
+df["MACD_SIGNAL"] = df["MACD"].ewm(span=9, adjust=False).mean()
+df["MACD_HISTOGRAM"] = df["MACD"] - df["MACD_SIGNAL"]
+
+# RSI using Wilder-style exponential smoothing
+price_change = close.diff()
+gains = price_change.clip(lower=0)
+losses = -price_change.clip(upper=0)
+
+average_gain = gains.ewm(
+    alpha=1 / 14,
+    adjust=False,
+    min_periods=14,
+).mean()
+
+average_loss = losses.ewm(
+    alpha=1 / 14,
+    adjust=False,
+    min_periods=14,
+).mean()
+
+relative_strength = average_gain / average_loss.replace(0, np.nan)
+df["RSI_14"] = 100 - (100 / (1 + relative_strength))
+
+# Handle periods with gains but no losses.
+df.loc[(average_loss == 0) &amp; (average_gain &gt; 0), "RSI_14"] = 100
+
+# Bollinger Bands
+rolling_mean = close.rolling(window=20, min_periods=20).mean()
+rolling_std = close.rolling(window=20, min_periods=20).std()
+
+df["BOLLINGER_MIDDLE"] = rolling_mean
+df["BOLLINGER_UPPER"] = rolling_mean + (2 * rolling_std)
+df["BOLLINGER_LOWER"] = rolling_mean - (2 * rolling_std)
+
+# Percentage deviation from the EMA baseline
+df["EMA_20_DEVIATION_PCT"] = (
+    (close - df["EMA_20"]) / df["EMA_20"] * 100
+)
+
+# Example alert: price is at least 15% below its EMA baseline
+df["EMA_DROP_ALERT"] = df["EMA_20_DEVIATION_PCT"] &lt;= -15
+
+return df
+</code></pre>
+<pre><code>## 4. Calculate indicators
+</code></pre>
+<p>{code-cell} ipython3
+results = add<em>stock</em>indicators(prices)</p>
+<p>results[
+    [
+        "Close",
+        "SMA<em>20",
+        "EMA</em>20",
+        "EMA<em>20</em>DEVIATION<em>PCT",
+        "RSI</em>14",
+        "MACD",
+        "MACD<em>SIGNAL",
+        "EMA</em>DROP_ALERT",
+    ]
+].tail(10)</p>
+<pre><code>## 5. Visualize price and moving averages
+</code></pre>
+<p>{code-cell} ipython3
+fig, ax = plt.subplots(figsize=(12, 6))</p>
+<p>ax.plot(results.index, results["Close"], label="Close")
+ax.plot(results.index, results["SMA<em>20"], label="SMA 20")
+ax.plot(results.index, results["EMA</em>20"], label="EMA 20")
+ax.plot(results.index, results["EMA_50"], label="EMA 50")</p>
+<p>ax.set<em>title("Closing Price with Moving Averages")
+ax.set</em>xlabel("Date")
+ax.set_ylabel("Price")
+ax.legend()
+ax.grid(True, alpha=0.3)</p>
+<p>plt.show()</p>
+<pre><code>## 6. Visualize MACD
+</code></pre>
+<p>{code-cell} ipython3
+fig, ax = plt.subplots(figsize=(12, 5))</p>
+<p>ax.plot(results.index, results["MACD"], label="MACD")
+ax.plot(results.index, results["MACD<em>SIGNAL"], label="Signal")
+ax.bar(
+    results.index,
+    results["MACD</em>HISTOGRAM"],
+    label="Histogram",
+    width=1.0,
+)</p>
+<p>ax.axhline(0, linewidth=1)
+ax.set<em>title("MACD")
+ax.set</em>xlabel("Date")
+ax.set_ylabel("MACD Value")
+ax.legend()
+ax.grid(True, alpha=0.3)</p>
+<p>plt.show()</p>
+<pre><code>## 7. Visualize RSI
+</code></pre>
+<p>{code-cell} ipython3
+fig, ax = plt.subplots(figsize=(12, 4))</p>
+<p>ax.plot(results.index, results["RSI_14"], label="RSI 14")
+ax.axhline(70, linestyle="--", label="Overbought threshold")
+ax.axhline(30, linestyle="--", label="Oversold threshold")</p>
+<p>ax.set<em>ylim(0, 100)
+ax.set</em>title("Relative Strength Index")
+ax.set<em>xlabel("Date")
+ax.set</em>ylabel("RSI")
+ax.legend()
+ax.grid(True, alpha=0.3)</p>
+<p>plt.show()</p>
+<pre><code>## 8. Visualize Bollinger Bands
+</code></pre>
+<p>{code-cell} ipython3
+fig, ax = plt.subplots(figsize=(12, 6))</p>
+<p>ax.plot(results.index, results["Close"], label="Close")
+ax.plot(
+    results.index,
+    results["BOLLINGER<em>MIDDLE"],
+    label="20-period mean",
+)
+ax.plot(
+    results.index,
+    results["BOLLINGER</em>UPPER"],
+    label="Upper band",
+)
+ax.plot(
+    results.index,
+    results["BOLLINGER_LOWER"],
+    label="Lower band",
+)</p>
+<p>ax.fill<em>between(
+    results.index,
+    results["BOLLINGER</em>LOWER"],
+    results["BOLLINGER_UPPER"],
+    alpha=0.15,
+)</p>
+<p>ax.set<em>title("Bollinger Bands")
+ax.set</em>xlabel("Date")
+ax.set_ylabel("Price")
+ax.legend()
+ax.grid(True, alpha=0.3)</p>
+<p>plt.show()</p>
+<pre><code>## 9. Build a persistent alert
+
+A single observation can be noisy. This example requires the condition to be
+true for three consecutive periods.
+</code></pre>
+<p>{code-cell} ipython3
+results["PERSISTENT<em>DROP</em>ALERT"] = (
+    results["EMA<em>DROP</em>ALERT"]
+    .rolling(window=3, min_periods=3)
+    .sum()
+    .eq(3)
+)</p>
+<p>results.loc[
+    results["PERSISTENT<em>DROP</em>ALERT"],
+    [
+        "Close",
+        "EMA<em>20",
+        "EMA</em>20<em>DEVIATION</em>PCT",
+        "EMA<em>DROP</em>ALERT",
+        "PERSISTENT<em>DROP</em>ALERT",
+    ],
+].tail()</p>
+<pre><code>## 10. Add absolute-impact and volume conditions
+
+For merchant alerts, a percentage threshold alone is usually insufficient.
+A useful alert may require:
+
+- A large percentage deviation.
+- A meaningful absolute financial impact.
+- Enough transaction volume.
+- Persistence over multiple periods.
+
+The example below demonstrates the structure using price and volume data.
+</code></pre>
+<p>{code-cell} ipython3
+results["EXPECTED<em>VALUE"] = results["EMA</em>20"]
+results["ABSOLUTE<em>GAP"] = results["Close"] - results["EXPECTED</em>VALUE"]</p>
+<p>minimum<em>absolute</em>gap = 5
+minimum<em>volume = 750</em>000
+minimum<em>drop</em>pct = -10</p>
+<p>results["QUALIFIED<em>ALERT"] = (
+    (results["EMA</em>20<em>DEVIATION</em>PCT"] &lt;= minimum<em>drop</em>pct)
+    &amp; (results["ABSOLUTE<em>GAP"].abs() >= minimum</em>absolute<em>gap)
+    & (results["Volume"] >= minimum</em>volume)
+)</p>
+<p>results["PERSISTENT<em>QUALIFIED</em>ALERT"] = (
+    results["QUALIFIED<em>ALERT"]
+    .rolling(window=3, min</em>periods=3)
+    .sum()
+    .eq(3)
+)</p>
+<p>results[
+    [
+        "Close",
+        "EMA<em>20",
+        "EMA</em>20<em>DEVIATION</em>PCT",
+        "ABSOLUTE<em>GAP",
+        "Volume",
+        "PERSISTENT</em>QUALIFIED_ALERT",
+    ]
+].tail(10)</p>
+<pre><code>## 11. Fast and slow EMA crossover
+
+A fast EMA reacts quickly to recent changes. A slow EMA represents a more
+stable long-term baseline.
+</code></pre>
+<p>{code-cell} ipython3
+results["FAST<em>EMA"] = results["Close"].ewm(span=10, adjust=False).mean()
+results["SLOW</em>EMA"] = results["Close"].ewm(span=40, adjust=False).mean()</p>
+<p>results["FAST<em>BELOW</em>SLOW"] = results["FAST<em>EMA"] < results["SLOW</em>EMA"]</p>
+<p>results["BEARISH<em>CROSSOVER"] = (
+    results["FAST</em>BELOW<em>SLOW"]
+    & ~results["FAST</em>BELOW<em>SLOW"].shift(1, fill</em>value=False)
+)</p>
+<p>results.loc[
+    results["BEARISH<em>CROSSOVER"],
+    ["Close", "FAST</em>EMA", "SLOW<em>EMA", "BEARISH</em>CROSSOVER"],
+].tail()</p>
+<pre><code>
+</code></pre>
+<p>{code-cell} ipython3
+fig, ax = plt.subplots(figsize=(12, 6))</p>
+<p>ax.plot(results.index, results["Close"], label="Close")
+ax.plot(results.index, results["FAST<em>EMA"], label="Fast EMA")
+ax.plot(results.index, results["SLOW</em>EMA"], label="Slow EMA")</p>
+<p>crossovers = results[results["BEARISH_CROSSOVER"]]</p>
+<p>ax.scatter(
+    crossovers.index,
+    crossovers["Close"],
+    marker="v",
+    s=80,
+    label="Bearish crossover",
+)</p>
+<p>ax.set<em>title("Fast and Slow EMA Crossover")
+ax.set</em>xlabel("Date")
+ax.set_ylabel("Price")
+ax.legend()
+ax.grid(True, alpha=0.3)</p>
+<p>plt.show()</p>
+<pre><code>## 12. Adapt the logic to merchant metrics
+
+The same function can be used with a merchant metric by setting
+`price_column` to the relevant column name.
+</code></pre>
+<p>{code-cell} ipython3
+merchant<em>dates = pd.date</em>range("2025-01-01", periods=120, freq="D")
+merchant<em>rng = np.random.default</em>rng(seed=7)</p>
+<p>merchant<em>data = pd.DataFrame(
+    {
+        "NetRevenue": (
+            10</em>000
+            + 1<em>200 * np.sin(np.arange(120) * 2 * np.pi / 7)
+            + merchant</em>rng.normal(0, 500, 120)
+        ),
+        "TicketCount": (
+            600
+            + 60 * np.sin(np.arange(120) * 2 * np.pi / 7)
+            + merchant<em>rng.normal(0, 25, 120)
+        ),
+    },
+    index=merchant</em>dates,
+)</p>
+<p>merchant_data.index.name = "Date"</p>
+<h1 id="introduceatemporaryrevenuedecline">Introduce a temporary revenue decline.</h1>
+<p>merchant<em>data.loc[
+    merchant</em>data.index[-8:],
+    "NetRevenue",
+] *= 0.78</p>
+<p>merchant<em>results = add</em>stock<em>indicators(
+    merchant</em>data,
+    price_column="NetRevenue",
+)</p>
+<p>merchant<em>results[
+    [
+        "NetRevenue",
+        "EMA</em>20",
+        "EMA<em>20</em>DEVIATION<em>PCT",
+        "EMA</em>DROP_ALERT",
+    ]
+].tail(12)</p>
+<pre><code>## 13. Recommended next step for restaurant or merchant data
+
+A restaurant baseline should account for seasonality. Instead of comparing
+every day with one global EMA, calculate separate baselines for combinations
+such as:
+
+- Merchant or location
+- Weekday
+- Daypart
+- Channel
+- Metric
+
+For example, compare Tuesday lunch delivery revenue with earlier Tuesday lunch
+delivery periods.
+
+A production alert engine should also track:
+
+- Expected value
+- Actual value
+- Percentage deviation
+- Absolute impact
+- Duration
+- Confidence
+- Likely contributing dimensions
+- Alert severity
+- Merchant feedback
+
+## 14. Export results
+</code></pre>
+<p>{code-cell} ipython3
+results.to<em>csv("stock</em>indicators<em>output.csv")
+merchant</em>results.to<em>csv("merchant</em>metric<em>indicators</em>output.csv")</p>
+<p>print("Export complete.")</p>
+<pre><code>## Running this Markdown notebook
+
+Install Jupytext:
+</code></pre>
+<p>bash
+pip install jupytext notebook pandas numpy matplotlib</p>
+<pre><code>Convert the Markdown file into an `.ipynb` notebook:
+</code></pre>
+<p>bash
+jupytext --to notebook stock<em>indicators</em>notebook.md
+jupyter notebook stock<em>indicators</em>notebook.ipynb</p>
+<pre><code>You can also pair Markdown and notebook files:
+</code></pre>
+<p>bash
+jupytext --set-formats ipynb,md:myst stock<em>indicators</em>notebook.ipynb
+```</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

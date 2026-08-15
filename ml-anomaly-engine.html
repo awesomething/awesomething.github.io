@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>ML Anomaly Engine</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sun, December 15, 2024">Sun, December 15, 2024</time>
+        <h1 class="mar-b-7">ML Anomaly Engine</h1>
+    </header>
+    <p>You have a clear three-part flow:</p>
+<ol>
+<li><strong>Alert engine</strong> detects a meaningful anomaly.</li>
+<li><strong>Notification hub</strong> presents and prioritizes alerts.</li>
+<li><strong>Chat experience</strong> explains what happened, why it happened, and what the merchant should do next.</li>
+</ol>
+<p>The next step is to define the product rules and user experience around each part.</p>
+<h2 id="followupquestionsfortheproductteam">Follow-up questions for the product team</h2>
+<h3 id="alertengine">Alert engine</h3>
+<ul>
+<li>Which metrics should generate alerts beyond net revenue: ticket count, average ticket, item sales, channel performance, labor cost, refunds, cancellations, or service time?</li>
+<li>Should alerts be created for both declines and unexpected increases?</li>
+<li>Is a fixed threshold, such as a 15% decline, appropriate for every merchant and metric?</li>
+<li>Should the baseline be the previous week, the same day last week, the same period last year, a rolling average, or forecasted performance?</li>
+<li>How long must an anomaly persist before an alert is generated?</li>
+<li>What minimum revenue or order volume is required to avoid alerts caused by small numbers?</li>
+<li>Should seasonality, holidays, promotions, closures, and unusual operating hours be considered?</li>
+<li>Should merchants be able to configure thresholds and metrics?</li>
+<li>How do we prevent repeated alerts for the same ongoing issue?</li>
+<li>What makes an alert critical, high priority, or informational?</li>
+</ul>
+<h3 id="notificationhub">Notification hub</h3>
+<ul>
+<li>Should notifications be ranked by financial impact, percentage change, urgency, or merchant preference?</li>
+<li>What information should be visible before the merchant opens an alert?</li>
+<li>Should alerts be grouped by location, metric, channel, or incident?</li>
+<li>Can merchants mark alerts as read, resolved, dismissed, or not useful?</li>
+<li>Should the hub show only active alerts or also historical and resolved alerts?</li>
+<li>Should merchants receive alerts outside the product through email, push, SMS, or in-app messages?</li>
+<li>How frequently should notifications be delivered: immediately, in a daily digest, or both?</li>
+<li>What happens when multiple metrics are symptoms of the same issue?</li>
+</ul>
+<h3 id="chatandexplanationexperience">Chat and explanation experience</h3>
+<ul>
+<li>What questions should the chat answer automatically when an alert is opened?</li>
+<li>Should the initial response explain what changed, where it changed, likely drivers, and recommended actions?</li>
+<li>How much evidence should be shown to support the explanation?</li>
+<li>Should merchants be able to drill down by location, channel, daypart, and item?</li>
+<li>Should the assistant distinguish between confirmed causes and possible causes?</li>
+<li>What actions can merchants take directly from the chat?</li>
+<li>Should the chat collect feedback such as “helpful,” “not relevant,” or “expected change”?</li>
+<li>How should the experience respond when there is not enough data to explain the anomaly?</li>
+</ul>
+<h2 id="productrecommendations">Product recommendations</h2>
+<h3 id="1avoidusingonlyfixedpercentagethresholds">1. Avoid using only fixed percentage thresholds</h3>
+<p>A 15% decline may be important for one merchant but normal for another. Use a combination of:</p>
+<ul>
+<li>Percentage change</li>
+<li>Absolute financial impact</li>
+<li>Statistical deviation from expected performance</li>
+<li>Duration of the issue</li>
+<li>Data volume and confidence</li>
+</ul>
+<p>For example, a 20% revenue decline representing $50 may be less important than a 7% decline representing $8,000.</p>
+<h3 id="2beginwithanarrowsetofhighvaluealerts">2. Begin with a narrow set of high-value alerts</h3>
+<p>Start with alerts that are easy to understand and likely to drive action:</p>
+<ul>
+<li>Net revenue decline</li>
+<li>Ticket-count decline</li>
+<li>Average-ticket decline</li>
+<li>Major item sales decline</li>
+<li>Channel underperformance</li>
+<li>Unusually high refunds or cancellations</li>
+<li>Labor cost increasing while revenue declines</li>
+</ul>
+<p>This will make the first version easier to validate before adding more operational metrics.</p>
+<h3 id="3buildalertsaroundincidentsnotindividualmetrics">3. Build alerts around incidents, not individual metrics</h3>
+<p>Revenue, ticket count, and item sales may all decline because of one underlying event. Instead of sending three separate notifications, combine them into one incident:</p>
+<blockquote>
+  <p>Revenue declined 18%, primarily due to lower delivery orders and reduced sales of the top chicken sandwich.</p>
+</blockquote>
+<p>This reduces notification fatigue and creates a more useful merchant experience.</p>
+<h3 id="4makeeveryalertanswerfourquestions">4. Make every alert answer four questions</h3>
+<p>Each alert should clearly communicate:</p>
+<ul>
+<li><strong>What happened?</strong></li>
+<li><strong>Where and when did it happen?</strong></li>
+<li><strong>Why did it likely happen?</strong></li>
+<li><strong>What should the merchant do next?</strong></li>
+</ul>
+<p>An example:</p>
+<blockquote>
+  <p>Net revenue at Location A was 17% below its normal Tuesday level between 11 a.m. and 2 p.m. The decline was mainly driven by 24% fewer delivery orders and lower chicken sandwich availability. Review delivery-channel availability and item stock levels.</p>
+</blockquote>
+<h3 id="5separatedetectionfromexplanation">5. Separate detection from explanation</h3>
+<p>The alert engine should determine that something unusual happened. A separate diagnostic layer should identify likely contributing factors. This makes the system easier to improve and avoids forcing the alert model to explain every anomaly itself.</p>
+<h3 id="6addmerchantfeedbackearly">6. Add merchant feedback early</h3>
+<p>Allow merchants to identify alerts as:</p>
+<ul>
+<li>Useful</li>
+<li>Expected</li>
+<li>Not relevant</li>
+<li>Incorrect</li>
+<li>Already resolved</li>
+</ul>
+<p>This feedback can help tune thresholds, improve prioritization, and personalize future alerts.</p>
+<h3 id="7definesuccessmetricsforthefeature">7. Define success metrics for the feature</h3>
+<p>Measure more than alert volume. Useful product metrics may include:</p>
+<ul>
+<li>Percentage of alerts opened</li>
+<li>Percentage of alerts investigated in chat</li>
+<li>Time from alert to merchant action</li>
+<li>Percentage of alerts marked useful</li>
+<li>Dismissal or false-positive rate</li>
+<li>Repeat engagement with the notification hub</li>
+<li>Revenue or operational impact after action</li>
+<li>Reduction in time required to identify business issues</li>
+</ul>
+<h2 id="recommendedmvpflow">Recommended MVP flow</h2>
+<p>For the first version, the system could:</p>
+<ol>
+<li>Monitor net revenue, ticket count, and average ticket.</li>
+<li>Compare performance with an appropriate historical baseline.</li>
+<li>Trigger only when both percentage change and financial impact exceed thresholds.</li>
+<li>Group related changes into one alert.</li>
+<li>Display the alert in the notification hub with severity and estimated impact.</li>
+<li>Open a pre-populated chat explanation when clicked.</li>
+<li>Show the main drivers by location, channel, daypart, and item.</li>
+<li>Recommend one or two practical next steps.</li>
+<li>Ask the merchant whether the alert was useful or expected.</li>
+</ol>
+<p>The key product decision is not simply <strong>“What percentage decline should trigger an alert?”</strong> It is <strong>“Which changes are important, unusual, explainable, and actionable enough to interrupt the merchant?”</strong></p>
+<p>You are converging on a sensible <strong>layered anomaly-detection architecture</strong>, rather than relying on a single model.</p>
+<p>The main approaches discussed are:</p>
+<ol>
+<li><strong>Statistical rules:</strong> Bollinger-style bands or deviations beyond 1.5–2.5 standard deviations.</li>
+<li><strong>Isolation Forest:</strong> lightweight multivariate anomaly detection.</li>
+<li><strong>Forecast-based detection:</strong> compare actual performance with an XGBoost or LightGBM forecast and expected range.</li>
+<li><strong>Ensemble logic:</strong> combine signals to improve confidence and reduce false positives.</li>
+</ol>
+<h2 id="recommendedarchitecture">Recommended architecture</h2>
+<h3 id="layer1statisticalguardrails">Layer 1: Statistical guardrails</h3>
+<p>Start with transparent rules that are inexpensive and easy to explain:</p>
+<ul>
+<li>Actual versus moving average or EMA</li>
+<li>Standardized deviation or z-score</li>
+<li>Absolute financial impact</li>
+<li>Minimum transaction volume</li>
+<li>Persistence across multiple periods</li>
+</ul>
+<p>For example:</p>
+<blockquote>
+  <p>Alert when net revenue is more than two standard deviations below its expected level, the estimated impact exceeds $500, and the condition persists for two intervals.</p>
+</blockquote>
+<p>One caution: standard deviation works best when the historical distribution is relatively stable. Restaurant data can be skewed by holidays, promotions, closures, and large orders. Consider testing <strong>median absolute deviation</strong> or empirical percentile bands alongside standard deviation.</p>
+<h3 id="layer2isolationforest">Layer 2: Isolation Forest</h3>
+<p>Isolation Forest is appropriate for detecting unusual combinations such as:</p>
+<ul>
+<li>Revenue decreased</li>
+<li>Ticket count remained stable</li>
+<li>Average ticket decreased</li>
+<li>Refunds increased</li>
+<li>One channel declined sharply</li>
+<li>Labor hours stayed elevated</li>
+</ul>
+<p>It is lightweight, but it does <strong>not forecast the expected value</strong>. It answers:</p>
+<blockquote>
+  <p>“Is this observation unusual compared with historical observations?”</p>
+</blockquote>
+<p>It does not directly answer:</p>
+<blockquote>
+  <p>“What should revenue have been today?”</p>
+</blockquote>
+<p>That is why combining it with statistical or forecast-based methods is useful.</p>
+<h3 id="layer3forecastresiduals">Layer 3: Forecast residuals</h3>
+<p>A forecasting model can predict:</p>
+<ul>
+<li>Expected net revenue</li>
+<li>Expected ticket count</li>
+<li>Expected average ticket</li>
+<li>Expected channel or item volume</li>
+<li>Lower and upper prediction bounds</li>
+</ul>
+<p>The anomaly signal then becomes:</p>
+<p>[
+\text{Residual}=\text{Actual}-\text{Forecast}
+]</p>
+<p>An alert is generated when actual performance falls outside the prediction interval and the impact is material.</p>
+<p>This approach is likely more accurate later, but it introduces additional requirements around data quality, model lifecycle, retraining, monitoring, and reproducibility.</p>
+<h2 id="donotselectadifferentalgorithmforeverymerchantinitially">Do not select a different algorithm for every merchant initially</h2>
+<p>Automatically selecting Isolation Forest for one merchant and XGBoost for another may sound robust, but it can create:</p>
+<ul>
+<li>Inconsistent alert behavior</li>
+<li>Harder debugging</li>
+<li>More difficult explainability</li>
+<li>Greater operational complexity</li>
+<li>More complicated product messaging</li>
+<li>Higher validation and monitoring costs</li>
+</ul>
+<p>For an MVP, use a <strong>consistent detection framework</strong> and vary parameters by merchant or merchant cohort.</p>
+<p>For example:</p>
+<ul>
+<li>Low-volume merchants: robust statistical bands</li>
+<li>Medium-volume merchants: bands plus Isolation Forest</li>
+<li>High-volume merchants: bands, Isolation Forest, and forecasting</li>
+</ul>
+<p>This provides sophistication where the data supports it without requiring thousands of unique architectures.</p>
+<h2 id="apracticalensemble">A practical ensemble</h2>
+<p>Each detector can produce a normalized score:</p>
+<ul>
+<li>Statistical deviation score</li>
+<li>Isolation Forest anomaly score</li>
+<li>Forecast residual score</li>
+<li>Financial-impact score</li>
+<li>Persistence score</li>
+</ul>
+<p>Then create an alert confidence score:</p>
+<p>[</p>
+<h1 id="textalertscore">\text{Alert score}</h1>
+<p>w<em>1S</em>{\text{statistical}}
++
+w<em>2S</em>{\text{isolation}}
++
+w<em>3S</em>{\text{forecast}}
++
+w<em>4S</em>{\text{impact}}
++
+w<em>5S</em>{\text{persistence}}
+]</p>
+<p>You do not necessarily need to alert only when every model agrees. A useful policy could be:</p>
+<ul>
+<li><strong>High severity:</strong> multiple detectors agree and financial impact is high.</li>
+<li><strong>Medium severity:</strong> one strong signal with meaningful impact.</li>
+<li><strong>Low severity:</strong> unusual behavior that requires monitoring but not interruption.</li>
+</ul>
+<h2 id="batchtrainingwithoutpermanentlyhostingmodels">Batch training without permanently hosting models</h2>
+<p>The proposed batch approach is reasonable:</p>
+<ol>
+<li>Pull a defined historical training window.</li>
+<li>Generate features.</li>
+<li>Train the model.</li>
+<li>Create forecasts for the next one or two weeks.</li>
+<li>Store forecasts and prediction bounds.</li>
+<li>Store model and dataset metadata.</li>
+<li>Remove the live compute resources.</li>
+<li>Compare incoming actuals against stored forecasts.</li>
+</ol>
+<p>You may not need to keep every model loaded in Vertex AI. However, you should not simply destroy everything after forecasting.</p>
+<p>Persist a compact reproducibility package containing:</p>
+<ul>
+<li>Merchant or cohort identifier</li>
+<li>Training start and end dates</li>
+<li>Feature definitions</li>
+<li>Data version or snapshot identifier</li>
+<li>Model type</li>
+<li>Model version</li>
+<li>Hyperparameters</li>
+<li>Random seed</li>
+<li>Code or container version</li>
+<li>Forecast output</li>
+<li>Prediction intervals</li>
+<li>Model evaluation metrics</li>
+<li>Training timestamp</li>
+<li>Schema version</li>
+</ul>
+<p>For higher-value merchants or disputed alerts, retaining the serialized model artifact may also be worthwhile. Model storage is generally much cheaper than continuously hosting a prediction endpoint.</p>
+<h2 id="explainabilityrecommendation">Explainability recommendation</h2>
+<p>The concern about losing the original model and dataset context is valid. The notification must be explainable using the information available <strong>when the prediction was created</strong>, not whatever the current menu or dataset looks like later.</p>
+<p>However, LIME may not be the most practical primary explanation layer here.</p>
+<p>Use two types of explanation:</p>
+<h3 id="modelexplanation">Model explanation</h3>
+<p>For forecasting models such as XGBoost or LightGBM:</p>
+<ul>
+<li>SHAP feature contributions</li>
+<li>Important seasonal variables</li>
+<li>Channel, daypart, promotion, and location effects</li>
+<li>Prediction interval and confidence</li>
+</ul>
+<p>For Isolation Forest, explanations are less intuitive. You can identify which features had the largest standardized deviation, but that is not always the same as explaining the model’s anomaly score.</p>
+<h3 id="businessdriverexplanation">Business-driver explanation</h3>
+<p>This is often more useful to merchants:</p>
+<blockquote>
+  <p>Revenue was $2,100 below expected. Approximately $1,300 of the decline came from delivery, $500 from fewer chicken-sandwich orders, and $300 from increased refunds.</p>
+</blockquote>
+<p>This driver decomposition can be produced separately from the anomaly model. The model decides <strong>whether something unusual occurred</strong>; the diagnostic layer explains <strong>which business dimensions contributed to it</strong>.</p>
+<h2 id="importantfollowupquestions">Important follow-up questions</h2>
+<h3 id="detectionstrategy">Detection strategy</h3>
+<ul>
+<li>What is the minimum viable detector for launch?</li>
+<li>Are you detecting sudden drops, sustained deterioration, unusual combinations, or all three?</li>
+<li>Should increases also generate alerts?</li>
+<li>How will scores from different algorithms be normalized?</li>
+<li>Does one model need to agree with another before an alert is shown?</li>
+<li>How will alert severity be calculated?</li>
+</ul>
+<h3 id="populationandmodeling">Population and modeling</h3>
+<ul>
+<li>Is there enough history for every merchant?</li>
+<li>What is the minimum ticket volume required for merchant-specific modeling?</li>
+<li>Can merchants be grouped by size, category, geography, or operating pattern?</li>
+<li>Should models run per merchant, per location, or per merchant-location-channel?</li>
+<li>How should new merchants without sufficient history be handled?</li>
+<li>How frequently should models or baselines be refreshed?</li>
+</ul>
+<h3 id="datareproducibility">Data reproducibility</h3>
+<ul>
+<li>Can the source tables support time-travel or versioned snapshots?</li>
+<li>What happens when menu items are renamed, removed, or recategorized?</li>
+<li>Will feature definitions be versioned?</li>
+<li>How long must predictions, explanations, and training metadata be retained?</li>
+<li>Do merchants need to see the explanation weeks after the original alert?</li>
+</ul>
+<h3 id="productpackaging">Product packaging</h3>
+<p>The final question about whether this should be sold as a feature is important:</p>
+<ul>
+<li>Is basic anomaly detection available to all merchants?</li>
+<li>Are forecasting and advanced explanations premium capabilities?</li>
+<li>Is pricing per merchant, location, alert volume, or subscription tier?</li>
+<li>Does the feature provide enough measurable value to justify a paid tier?</li>
+<li>Will paid customers expect configurable metrics, thresholds, and delivery channels?</li>
+<li>What service-level expectations follow from charging for the feature?</li>
+</ul>
+<h2 id="productrecommendation">Product recommendation</h2>
+<p>Use a tiered model:</p>
+<p><strong>Core capability</strong></p>
+<ul>
+<li>Revenue and ticket-count alerts</li>
+<li>Statistical or robust deviation bands</li>
+<li>Basic notification hub</li>
+<li>Simple driver breakdown</li>
+</ul>
+<p><strong>Advanced capability</strong></p>
+<ul>
+<li>Multivariate Isolation Forest</li>
+<li>Forecast-based anomaly detection</li>
+<li>Custom sensitivity</li>
+<li>Item, channel, and labor alerts</li>
+<li>Advanced explanations</li>
+<li>Alert history and benchmarking</li>
+<li>Email, SMS, or push delivery</li>
+</ul>
+<p>This allows broad adoption of the basic feature while making the more expensive forecasting and explanation capabilities commercially sustainable.</p>
+<p>The most defensible MVP is therefore:</p>
+<blockquote>
+  <p><strong>Robust statistical bands plus materiality and persistence rules, supported by Isolation Forest as a secondary signal. Add forecast-based models only for merchants with sufficient data and demonstrated product value.</strong></p>
+</blockquote>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

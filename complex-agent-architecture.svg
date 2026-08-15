@@ -1,0 +1,261 @@
+<svg width="100%" viewBox="0 0 680 1620" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: white;">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<style>
+text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.th { font-size: 14px; font-weight: 500; fill: #2C2C2A; }
+.ts { font-size: 12px; font-weight: 400; fill: #5F5E5A; }
+.arr { stroke: #888780; stroke-width: 1.5; }
+.leader { stroke: #B4B2A9; stroke-width: 0.5; stroke-dasharray: 4 3; }
+
+/* Gray */
+.fill-gray { fill: #F1EFE8; stroke: #5F5E5A; }
+.fill-gray-text { fill: #444441; }
+
+/* Blue */
+.fill-blue { fill: #E6F1FB; stroke: #185FA5; }
+.fill-blue-text { fill: #0C447C; }
+
+/* Teal */
+.fill-teal { fill: #E1F5EE; stroke: #0F6E56; }
+.fill-teal-text { fill: #085041; }
+
+/* Green */
+.fill-green { fill: #EAF3DE; stroke: #3B6D11; }
+.fill-green-text { fill: #27500A; }
+
+/* Amber */
+.fill-amber { fill: #FAEEDA; stroke: #854F0B; }
+.fill-amber-text { fill: #633806; }
+
+/* Coral */
+.fill-coral { fill: #FAECE7; stroke: #993C1D; }
+.fill-coral-text { fill: #712B13; }
+
+/* Purple */
+.fill-purple { fill: #EEEDFE; stroke: #534AB7; }
+.fill-purple-text { fill: #3C3489; }
+
+/* Red */
+.fill-red { fill: #FCEBEB; stroke: #A32D2D; }
+.fill-red-text { fill: #791F1F; }
+
+.decision { fill: #F1EFE8; stroke: #888780; stroke-width: 0.5; }
+</style>
+
+<!-- ========= TITLE ========= -->
+<text x="340" y="12" text-anchor="middle" style="font-size:11px; font-weight:500; fill:#888780; letter-spacing:0.5px;">COMPLEX AGENT ARCHITECTURE — CURRENT STATE + NEXT STEPS</text>
+
+<!-- ========= ORCHESTRATOR ========= -->
+<rect x="230" y="26" width="200" height="40" rx="8" class="fill-gray" stroke-width="0.5"/>
+<text x="330" y="48" text-anchor="middle" dominant-baseline="central" class="th fill-gray-text">Orchestrator agent</text>
+
+<!-- Decision: Analytical? -->
+<rect x="290" y="86" width="80" height="80" rx="4" transform="rotate(45 330 126)" class="decision"/>
+<text x="330" y="122" text-anchor="middle" dominant-baseline="central" class="ts">Analytical?</text>
+<line x1="330" y1="66" x2="330" y2="88" class="arr" marker-end="url(#arrow)"/>
+
+<line x1="330" y1="162" x2="330" y2="188" class="arr" marker-end="url(#arrow)"/>
+<text x="338" y="180" class="ts">Yes</text>
+
+<line x1="370" y1="126" x2="560" y2="126" class="arr" marker-end="url(#arrow)"/>
+<text x="465" y="119" class="ts">No</text>
+<rect x="562" y="106" width="100" height="40" rx="8" class="fill-gray" stroke-width="0.5"/>
+<text x="612" y="126" text-anchor="middle" dominant-baseline="central" class="th fill-gray-text">RAG agent</text>
+
+<!-- ========= FOLLOW-UP REWRITE ========= -->
+<rect x="170" y="190" width="320" height="44" rx="8" class="fill-amber" stroke-width="0.5"/>
+<text x="330" y="206" text-anchor="middle" dominant-baseline="central" class="th fill-amber-text">Rewrite follow-up → standalone query</text>
+<text x="330" y="222" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#854F0B">"What about last week?" → "What were my sales last week?"</text>
+<text x="498" y="218" style="font-size:11px; font-weight:500; fill:#BA7517;">HIGH PRIORITY GAP</text>
+
+<!-- ========= KPI PREFETCH ========= -->
+<line x1="330" y1="234" x2="330" y2="256" class="arr" marker-end="url(#arrow)"/>
+<rect x="190" y="258" width="280" height="36" rx="8" class="fill-teal" stroke-width="0.5"/>
+<text x="330" y="276" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">KPI prefetch (lightweight retrieval)</text>
+
+<!-- ========= KPI AGENT ========= -->
+<line x1="330" y1="294" x2="330" y2="314" class="arr" marker-end="url(#arrow)"/>
+<rect x="200" y="316" width="260" height="44" rx="8" class="fill-blue" stroke-width="0.5"/>
+<text x="330" y="332" text-anchor="middle" dominant-baseline="central" class="th fill-blue-text">KPI agent (POS CA agent)</text>
+<text x="330" y="348" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#185FA5">Generate SQL → RBAC → execute → results</text>
+
+<!-- ========= KPI OUTPUT ========= -->
+<line x1="330" y1="360" x2="330" y2="384" class="arr" marker-end="url(#arrow)"/>
+<rect x="210" y="386" width="240" height="44" rx="6" class="fill-gray" stroke-width="0.5"/>
+<text x="330" y="402" text-anchor="middle" dominant-baseline="central" class="th fill-gray-text">Output + confidence score</text>
+<text x="330" y="418" text-anchor="middle" dominant-baseline="central" class="ts">Structured format with reasoning</text>
+
+<!-- ========= CONFIDENCE CHECK ========= -->
+<line x1="330" y1="430" x2="330" y2="452" class="arr" marker-end="url(#arrow)"/>
+<rect x="294" y="460" width="72" height="72" rx="4" transform="rotate(45 330 496)" class="decision"/>
+<text x="330" y="490" text-anchor="middle" dominant-baseline="central" class="ts">Confidence</text>
+<text x="330" y="504" text-anchor="middle" dominant-baseline="central" class="ts">≥ threshold?</text>
+
+<!-- Yes: Frontend -->
+<line x1="330" y1="532" x2="330" y2="558" class="arr" marker-end="url(#arrow)"/>
+<text x="338" y="550" class="ts">Yes</text>
+<rect x="256" y="560" width="148" height="36" rx="8" class="fill-green" stroke-width="0.5"/>
+<text x="330" y="578" text-anchor="middle" dominant-baseline="central" class="th fill-green-text">Send to frontend</text>
+
+<!-- No: Escalation -->
+<line x1="366" y1="496" x2="500" y2="496" stroke="#D85A30" stroke-width="1" marker-end="url(#arrow)"/>
+<text x="425" y="488" class="ts">No</text>
+
+<!-- ========= ESCALATION PACKAGE ========= -->
+<rect x="502" y="458" width="165" height="76" rx="8" class="fill-amber" stroke-width="0.5"/>
+<text x="584" y="476" text-anchor="middle" dominant-baseline="central" class="th fill-amber-text">Escalation package</text>
+<text x="584" y="494" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#854F0B">Original + rewritten query</text>
+<text x="584" y="508" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#854F0B">KPI confidence + partial result</text>
+<text x="584" y="522" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#854F0B">Reason for escalation</text>
+
+<line x1="584" y1="534" x2="584" y2="562" stroke="#D85A30" stroke-width="1" marker-end="url(#arrow)"/>
+
+<!-- ========= COMPLEX AGENT CONTAINER ========= -->
+<rect x="30" y="564" width="640" height="640" rx="16" class="fill-coral" stroke-width="0.5" fill-opacity="0.15"/>
+<rect x="30" y="564" width="640" height="640" rx="16" fill="none" stroke="#993C1D" stroke-width="0.5"/>
+<text x="50" y="586" style="font-size:13px; font-weight:500; fill:#712B13;">Complex agent (sub-agent of KPI)</text>
+
+<!-- Step 1: Read escalation -->
+<rect x="440" y="598" width="210" height="36" rx="6" class="fill-coral" stroke-width="0.5"/>
+<text x="545" y="610" text-anchor="middle" dominant-baseline="central" class="th fill-coral-text">Read escalation context</text>
+<text x="545" y="624" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#993C1D">What KPI already found</text>
+
+<!-- ========= PHASE 1: PARALLEL RETRIEVAL ========= -->
+<line x1="545" y1="634" x2="545" y2="652" stroke="#888780" stroke-width="0.5" marker-end="url(#arrow)"/>
+
+<rect x="50" y="654" width="600" height="206" rx="12" class="fill-teal" stroke-width="0.5" fill-opacity="0.2"/>
+<rect x="50" y="654" width="600" height="206" rx="12" fill="none" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="70" y="674" style="font-size:12px; font-weight:500; fill:#085041;">Phase 1 — parallel (ThreadPoolExecutor / gather_complex_context)</text>
+
+<rect x="70" y="690" width="170" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="155" y="708" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Similarity search</text>
+<text x="155" y="724" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">Semantic layer lookup</text>
+
+<rect x="250" y="690" width="170" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="335" y="708" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Get measures</text>
+<text x="335" y="724" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">Canonical definitions</text>
+
+<rect x="430" y="690" width="200" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="530" y="708" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Get business rules</text>
+<text x="530" y="724" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">Exclusions, filters, date logic</text>
+
+<rect x="70" y="750" width="170" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="155" y="768" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Get raw tables</text>
+<text x="155" y="784" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">Not reporting tables</text>
+
+<rect x="250" y="750" width="170" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="335" y="768" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Get similar queries</text>
+<text x="335" y="784" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">Golden query examples</text>
+
+<rect x="430" y="750" width="200" height="50" rx="6" class="fill-teal" stroke-width="0.5"/>
+<text x="530" y="768" text-anchor="middle" dominant-baseline="central" class="th fill-teal-text">Get column metadata</text>
+<text x="530" y="784" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#0F6E56">For matched tables</text>
+
+<!-- ========= DO I HAVE WHAT I NEED? ========= -->
+<line x1="350" y1="860" x2="350" y2="878" class="arr" marker-end="url(#arrow)"/>
+<rect x="310" y="886" width="80" height="80" rx="4" transform="rotate(45 350 926)" class="decision"/>
+<text x="350" y="920" text-anchor="middle" dominant-baseline="central" class="ts">Got enough</text>
+<text x="350" y="934" text-anchor="middle" dominant-baseline="central" class="ts">data?</text>
+
+<!-- Yes: Phase 2 joins -->
+<line x1="350" y1="962" x2="350" y2="984" class="arr" marker-end="url(#arrow)"/>
+<text x="358" y="976" class="ts">Yes</text>
+
+<!-- ========= PHASE 2: SEQUENTIAL JOINS ========= -->
+<rect x="180" y="986" width="340" height="44" rx="8" class="fill-purple" stroke-width="0.5"/>
+<text x="350" y="1002" text-anchor="middle" dominant-baseline="central" class="th fill-purple-text">Phase 2 — find join paths</text>
+<text x="350" y="1018" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#534AB7">Sequential: needs tables before it can find joins</text>
+
+<!-- No: Insufficient data -->
+<line x1="392" y1="926" x2="530" y2="926" stroke="#D85A30" stroke-width="0.5" marker-end="url(#arrow)"/>
+<text x="455" y="918" class="ts">No</text>
+
+<rect x="532" y="896" width="128" height="60" rx="6" class="fill-red" stroke-width="0.5"/>
+<text x="596" y="914" text-anchor="middle" dominant-baseline="central" class="th fill-red-text">Insufficient data</text>
+<text x="596" y="930" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#A32D2D">Rephrase + retry</text>
+<text x="596" y="944" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#A32D2D">OR ask user</text>
+
+<!-- Retry loop -->
+<path d="M596 956 L596 976 L654 976 L654 670 L632 670" fill="none" stroke="#A32D2D" stroke-width="0.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+<text x="662" y="830" style="font-size:11px; fill:#A32D2D;" transform="rotate(90 662 830)">Retry with rephrased query</text>
+
+<!-- Ask user path -->
+<line x1="596" y1="956" x2="596" y2="1192" stroke="#A32D2D" stroke-width="0.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+
+<!-- ========= SQL GENERATION ========= -->
+<line x1="350" y1="1030" x2="350" y2="1052" class="arr" marker-end="url(#arrow)"/>
+<rect x="200" y="1054" width="300" height="44" rx="8" class="fill-blue" stroke-width="0.5"/>
+<text x="350" y="1070" text-anchor="middle" dominant-baseline="central" class="th fill-blue-text">Generate SQL</text>
+<text x="350" y="1086" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#185FA5">Focused context: 10-15 fragments, not 40K lines</text>
+
+<!-- ========= EXECUTE ========= -->
+<line x1="350" y1="1098" x2="350" y2="1116" class="arr" marker-end="url(#arrow)"/>
+<rect x="240" y="1118" width="220" height="36" rx="6" class="fill-gray" stroke-width="0.5"/>
+<text x="350" y="1136" text-anchor="middle" dominant-baseline="central" class="th fill-gray-text">RBAC → execute SQL</text>
+
+<!-- ========= EXEC CHECK ========= -->
+<line x1="350" y1="1154" x2="350" y2="1170" class="arr" marker-end="url(#arrow)"/>
+<rect x="316" y="1176" width="68" height="68" rx="4" transform="rotate(45 350 1210)" class="decision"/>
+<text x="350" y="1206" text-anchor="middle" dominant-baseline="central" class="ts">Exec OK?</text>
+
+<!-- Success -->
+<line x1="350" y1="1244" x2="350" y2="1268" class="arr" marker-end="url(#arrow)"/>
+<text x="358" y="1260" class="ts">Yes</text>
+<rect x="270" y="1270" width="160" height="36" rx="8" class="fill-green" stroke-width="0.5"/>
+<text x="350" y="1288" text-anchor="middle" dominant-baseline="central" class="th fill-green-text">Return results</text>
+
+<!-- Fail -->
+<line x1="384" y1="1210" x2="520" y2="1210" stroke="#A32D2D" stroke-width="0.5" marker-end="url(#arrow)"/>
+<text x="445" y="1202" class="ts">No</text>
+<rect x="522" y="1188" width="140" height="44" rx="6" class="fill-red" stroke-width="0.5"/>
+<text x="592" y="1204" text-anchor="middle" dominant-baseline="central" class="th fill-red-text">Ask user</text>
+<text x="592" y="1220" text-anchor="middle" dominant-baseline="central" class="ts" style="fill:#A32D2D">Clarify or narrow query</text>
+
+<!-- ========= TIMEOUT ========= -->
+<line x1="30" y1="1330" x2="670" y2="1330" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="50" y="1354" style="font-size:13px; font-weight:500; fill:#444441;">45s timeout barrier (backend)</text>
+<text x="50" y="1374" class="ts">If results ready → return partial answer</text>
+<text x="50" y="1390" class="ts">If still reasoning → "This requires more complex analysis. Try narrowing the question."</text>
+
+<!-- ========= FUTURE ========= -->
+<line x1="30" y1="1418" x2="670" y2="1418" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="50" y="1442" style="font-size:13px; font-weight:500; fill:#444441;">Future (not built yet)</text>
+
+<rect x="50" y="1458" width="130" height="28" rx="4" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="115" y="1473" text-anchor="middle" dominant-baseline="central" class="ts">SQL cache</text>
+
+<rect x="195" y="1458" width="150" height="28" rx="4" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="270" y="1473" text-anchor="middle" dominant-baseline="central" class="ts">Skeleton matching</text>
+
+<rect x="360" y="1458" width="150" height="28" rx="4" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="435" y="1473" text-anchor="middle" dominant-baseline="central" class="ts">Approval button UX</text>
+
+<rect x="525" y="1458" width="140" height="28" rx="4" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="595" y="1473" text-anchor="middle" dominant-baseline="central" class="ts">Follow-up rewrite</text>
+
+<!-- ========= KEY DECISIONS ========= -->
+<line x1="30" y1="1508" x2="670" y2="1508" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="50" y="1532" style="font-size:13px; font-weight:500; fill:#444441;">Key design decisions</text>
+<text x="50" y="1552" class="ts">• KPI prefetch is for KPI path only. Complex agent owns its own retrieval via tools.</text>
+<text x="50" y="1570" class="ts">• Complex agent receives KPI escalation package as starting context, not replacement for retrieval.</text>
+<text x="50" y="1588" class="ts">• Phase 1 tools run in parallel (ThreadPoolExecutor). Phase 2 (joins) is sequential — needs tables first.</text>
+<text x="50" y="1606" class="ts">• Biggest weak spot: join metadata. Validate with golden queries, patch incrementally.</text>
+
+<!-- ========= LEGEND ========= -->
+<rect x="50" y="30" width="12" height="12" rx="3" class="fill-blue" stroke-width="0.5"/>
+<text x="68" y="40" class="ts">KPI / SQL generation</text>
+<rect x="50" y="48" width="12" height="12" rx="3" class="fill-teal" stroke-width="0.5"/>
+<text x="68" y="58" class="ts">Parallel retrieval</text>
+<rect x="50" y="66" width="12" height="12" rx="3" class="fill-purple" stroke-width="0.5"/>
+<text x="68" y="76" class="ts">Sequential joins</text>
+<rect x="50" y="84" width="12" height="12" rx="3" class="fill-coral" stroke-width="0.5"/>
+<text x="68" y="94" class="ts">Complex agent</text>
+<rect x="50" y="102" width="12" height="12" rx="3" class="fill-amber" stroke-width="0.5"/>
+<text x="68" y="112" class="ts">Escalation</text>
+
+</svg>

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Ingredient Context and Modifiers</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Mon, August 12, 2024">Mon, August 12, 2024</time>
+        <h1 class="mar-b-7">Ingredient Context and Modifiers</h1>
+    </header>
+    <h2 id="summary">Summary</h2>
+<p>The discussion clarified how <strong>ingredient context, modifiers, and miscellaneous/open items</strong> work together in the POS configuration.</p>
+<p>The <strong>context</strong> feature lets one ingredient support different ordering situations without creating separate versions of the same ingredient. An ingredient has a base price, and each context applies a multiplier to that price. For example, if cheese costs $1, a context of <strong>Extra = 2x</strong> would charge $2, <strong>On Side = 1x</strong> would charge $1, and <strong>Free/No Charge = 0x</strong> would charge $0. This avoids creating separate ingredients such as “Cheese,” “Extra Cheese,” and “Cheese on Side.”</p>
+<p>The context multiplier applies to the ingredient price that is relevant in that configuration. For example, if lettuce is configured at <strong>$0.50 within the Burger Toppings modifier</strong>, and its Extra context is 2x, selecting extra lettuce at the POS would result in a <strong>$1.00 charge</strong>.</p>
+<p>A <strong>modifier</strong> is a group of ingredients or choices associated with an item. For example, a Burger Toppings modifier could contain lettuce and tomato, while a Fries modifier could contain chili and cheese. Modifier configuration can also control things such as how many choices the customer can select and how many selected ingredients are included for free.</p>
+<p>The <strong>Number of Included Ingredients</strong> setting allows a certain number of selections from a modifier to be included without an additional charge, even when those ingredients normally have prices.</p>
+<p>The discussion also clarified the concept of <strong>open/miscellaneous ingredients and items</strong>. Checking the <strong>Miscellaneous Ingredient</strong> box turns an ingredient into an open ingredient. Instead of always using a predefined price, the POS prompts the employee to enter the price when it is rung up. The same concept exists for items through the <strong>Miscellaneous Item</strong> checkbox. Therefore, an AI instruction such as “create an open item” or “create an open ingredient” should translate into creating the appropriate record and enabling its miscellaneous checkbox.</p>
+<p>Other item-level settings briefly discussed included the <strong>Non-Revenue flag</strong>, typically used for things such as gift cards; an <strong>Alcohol flag</strong>, which can affect integrations such as delivery platforms; and measurement-based pricing options that may be used for products sold by weight or even time.</p>
+<h2 id="keyconfigurationrelationships">Key configuration relationships</h2>
+<p>A useful mental model is:</p>
+<p><strong>Ingredient → Context → Modifier → Item</strong></p>
+<p>An <strong>ingredient</strong> defines the underlying option.
+A <strong>context</strong> changes how its price behaves in situations such as Extra or On Side.
+A <strong>modifier</strong> groups ingredients and establishes how those ingredients behave within a particular choice group.
+An <strong>item</strong> such as a Burger Combo attaches the relevant modifiers and has its own item price and properties.</p>
+<p>For AI-driven configuration, the important distinction is that requests such as <strong>“extra lettuce” should generally modify the context/multiplier rather than create another lettuce ingredient</strong>.</p>
+<h2 id="followupquestions">Follow-up questions</h2>
+<ol>
+<li><p>When an ingredient has both a base ingredient price and a different price inside a modifier, which price should the context multiplier use in every scenario? The example suggests it uses the modifier-specific price, but this should be formally confirmed.</p></li>
+<li><p>Are context multipliers limited to values such as 0x, 1x, and 2x, or can users configure arbitrary values such as 0.5x, 1.5x, or 3x?</p></li>
+<li><p>Can the same ingredient have different context behavior depending on the modifier or item, or is its context configuration global everywhere the ingredient is used?</p></li>
+<li><p>If an ingredient is already included by default on an item, how should <strong>Extra</strong> pricing work? For example, if standard cheese is included in the burger price, does Extra Cheese charge the full ingredient price × multiplier, or only the incremental portion?</p></li>
+<li><p>How does <strong>Number of Included Ingredients</strong> interact with context? If one ingredient is included for free but the customer selects it as Extra, does the inclusion apply before or after the context multiplier?</p></li>
+<li><p>Can contexts represent actions other than pricing, such as <strong>Light, No, Substitute, Half, First Half, Second Half, or On Side</strong>, and can each have separate multipliers?</p></li>
+<li><p>For a 0x context, is the ingredient recorded on the ticket with a $0 price, or does the system treat it differently?</p></li>
+<li><p>When an item or ingredient is marked <strong>Miscellaneous</strong>, are there permissions or price limits controlling which employees can enter an open price?</p></li>
+<li><p>Should an open item normally have a configured default price of $0, a blank price, or does the miscellaneous checkbox override whatever price is stored?</p></li>
+<li><p>Are modifier-level ingredient prices overrides of the ingredient's normal price, or are they additional charges layered on top of the ingredient price?</p></li>
+</ol>
+<h2 id="recommendationsfortheaiimplementation">Recommendations for the AI implementation</h2>
+<p>The AI should translate user language into <strong>configuration intent</strong>, rather than reproducing the wording literally. For example, “Make extra cheese cost twice as much” should update the Cheese ingredient's Extra context to <strong>2x</strong>, rather than creating a new “Extra Cheese” ingredient.</p>
+<p>It would be useful to teach the AI a small set of explicit mappings:</p>
+<ul>
+<li><strong>“Open item” → Create/update Item + enable Miscellaneous Item</strong></li>
+<li><strong>“Open ingredient” → Create/update Ingredient + enable Miscellaneous Ingredient</strong></li>
+<li><strong>“Extra X costs double” → Add/update Extra context for X = 2x</strong></li>
+<li><strong>“X on the side costs the same” → On Side context = 1x</strong></li>
+<li><strong>“Don't charge for X in this context” → Context multiplier = 0x</strong></li>
+<li><strong>“First two toppings are free” → Modifier Number of Included Ingredients = 2</strong></li>
+<li><strong>“Add lettuce and tomato choices to the burger” → Create/use modifier and associate those ingredients</strong></li>
+</ul>
+<p>I would also recommend preventing the AI from creating duplicate ingredients unless the user explicitly needs separate inventory or reporting records. Before creating “Extra Lettuce,” “Side Lettuce,” or similar records, it should check whether an existing <strong>Lettuce ingredient + context</strong> can satisfy the request.</p>
+<p>Finally, the product documentation or AI schema should make the pricing hierarchy explicit. The biggest potential source of confusion is determining <strong>which ingredient price is multiplied when an ingredient appears in different modifiers or items</strong>. Defining that rule clearly will make AI-generated configurations much more reliable.</p>
+<h2 id="summary-1">Summary</h2>
+<p>This section clarified three important behaviors: <strong>default ingredients</strong>, <strong>context pricing on defaults</strong>, and <strong>sub-items/nested modifiers</strong>.</p>
+<p>When an ingredient is marked as <strong>default</strong> on an item, the POS assumes that ingredient already comes with the item. For example, if lettuce is defaulted on a burger, tapping the selected lettuce can effectively mean <strong>“No Lettuce”</strong> rather than adding another lettuce. This avoids needing a separate “No” context or separate “No Lettuce” ingredient.</p>
+<p>Ingredients that have context options are visually indicated by the <strong>three-circle icon</strong>. On the POS, staff can long-press the ingredient to access its available contexts, such as Extra or other configured behaviors.</p>
+<p>A key pricing clarification is that <strong>context pricing accounts for ingredients that are already included</strong>. For example, if lettuce is included on the burger at a $0.50 value and Extra is configured as 2x, choosing Extra Lettuce does <strong>not necessarily add the full $1.00 on top of the item</strong>. Because one portion is already included, the system charges only for the additional portion—$0.50 in this example. By contrast, if tomato is not already included and its base modifier price is $0.50, Extra Tomato at 2x can result in a $1.00 charge.</p>
+<p>The session then introduced <strong>sub-items</strong>. A sub-item is used when an ingredient within a modifier needs to have its <strong>own modifiers or further customization</strong>.</p>
+<p>For example, the Burger Combo has a side modifier with:</p>
+<ul>
+<li>Fries</li>
+<li>Green beans</li>
+</ul>
+<p>Fries are the default side. However, fries themselves may need additional options such as:</p>
+<ul>
+<li>Add chili</li>
+<li>Add cheese</li>
+</ul>
+<p>Instead of creating a second special version of fries just for the Burger Combo, the <strong>Fries ingredient is linked to the existing Fries item as its sub-item</strong>. The Fries item already contains the chili and cheese modifiers. When the Fries ingredient is selected inside the Burger Combo, the POS looks to the linked Fries item and exposes those same settings.</p>
+<p>This creates a nested structure such as:</p>
+<p><strong>Burger Combo → Burger Sides modifier → Fries ingredient → Fries sub-item → Chili/Cheese modifier</strong></p>
+<p>On the POS, a linked sub-item creates an additional tab or level where staff can modify that selected ingredient further. Without the sub-item link, fries would simply behave as an ingredient that could be selected or removed; staff would not be able to drill into the fries and add chili or cheese.</p>
+<p>The same Fries item can also continue to exist as a <strong>standalone menu item</strong>. This means the restaurant can maintain one configuration for fries and reuse its modifier behavior both when fries are sold independently and when they appear as a side within another item.</p>
+<p>Other strong examples of sub-items mentioned were:</p>
+<ul>
+<li><strong>Baked potato</strong> → butter, sour cream, cheese, bacon, etc.</li>
+<li><strong>Side salad</strong> → dressing selection and other salad modifications</li>
+<li><strong>Pizza configurations</strong> → potentially multiple nested customization levels</li>
+</ul>
+<p>Sub-items can apparently be nested multiple levels deep, although that can make configurations significantly more complex.</p>
+<h2 id="importantrulediscoveredaboutcontextpricing">Important rule discovered about context pricing</h2>
+<p>The earlier model of simply saying:</p>
+<p><strong>Context charge = ingredient price × multiplier</strong></p>
+<p>is incomplete when the ingredient is already included by default.</p>
+<p>A better conceptual model is:</p>
+<p><strong>Final additional charge depends on the context multiplier and how much of the ingredient is already included in the item.</strong></p>
+<p>For example:</p>
+<ul>
+<li>Lettuce price = $0.50</li>
+<li>Lettuce is already included/defaulted</li>
+<li>Extra = 2x</li>
+<li>Total desired quantity/value = $1.00</li>
+<li>Already included value = $0.50</li>
+<li><strong>Incremental charge = $0.50</strong></li>
+</ul>
+<p>Whereas:</p>
+<ul>
+<li>Tomato price = $0.50</li>
+<li>Tomato is not already included</li>
+<li>Extra = 2x</li>
+<li><strong>Charge = $1.00</strong></li>
+</ul>
+<p>That distinction should be captured explicitly in any AI logic or documentation.</p>
+<h2 id="followupquestions-1">Follow-up questions</h2>
+<ol>
+<li><p><strong>How exactly is the incremental context price calculated for default ingredients?</strong> Is the formula always <code>base price × multiplier − already included amount</code>, or are there other pricing rules involved?</p></li>
+<li><p>If a default ingredient has a <strong>0x or 1x context</strong>, what happens financially? For example, does “On Side” for an included ingredient remain free because the original portion is already included?</p></li>
+<li><p>If an ingredient is defaulted but the modifier also has <strong>Number of Included Ingredients</strong>, which inclusion rule takes precedence?</p></li>
+<li><p>Does turning off a default ingredient always automatically generate a kitchen instruction such as <strong>“No Lettuce,”</strong> or can that wording be customized?</p></li>
+<li><p>Can a context itself represent <strong>No</strong>, or is the preferred setup always to use the default-selected state and deselect it?</p></li>
+<li><p>Is the three-circle context indicator visible only when at least one context is configured, or does it also indicate other ingredient actions?</p></li>
+<li><p>Can <strong>every ingredient</strong> be linked to a sub-item, or are there restrictions on which item types can act as sub-items?</p></li>
+<li><p>Can multiple different ingredients point to the <strong>same sub-item</strong>? For example, could “Regular Fries” and “Large Fries” both inherit options from one Fries item?</p></li>
+<li><p>When a sub-item item has its own base price, is that price ignored when it is being used as a sub-item, with only its modifier charges inherited?</p></li>
+<li><p>Which properties of the linked item are inherited by the sub-item relationship? For example: modifiers, default ingredients, contexts, taxes, availability, kitchen routing, price, or all of the above?</p></li>
+<li><p>If the linked Fries item is later updated—for example, a new “Loaded” modifier is added—does every parent item using Fries as a sub-item immediately inherit that update after publishing?</p></li>
+<li><p>What happens if sub-items are nested several layers deep and one of the links creates a circular reference? Does the admin portal prevent that?</p></li>
+<li><p>Is there a recommended maximum nesting depth for usability even though the system technically permits multiple levels?</p></li>
+<li><p>When a sub-item is unavailable or out of stock, does that automatically affect the parent ingredient wherever it is used?</p></li>
+<li><p>If fries are defaulted as the side and the customer switches to green beans, does the POS automatically remove the fries sub-item tab and replace it with any sub-item configuration attached to green beans?</p></li>
+</ol>
+<h2 id="recommendations">Recommendations</h2>
+<p>The AI configuration logic should treat <strong>default state, context, and sub-item relationships as separate concepts</strong>.</p>
+<p>A request such as <strong>“The burger comes with lettuce”</strong> should default/select the Lettuce ingredient on the relevant modifier. A request such as <strong>“Let customers order extra lettuce”</strong> should configure an Extra context on the existing Lettuce ingredient rather than create “Extra Lettuce.” And a request such as <strong>“If they choose fries, let them add chili and cheese”</strong> should identify that fries need further customization and use a <strong>sub-item relationship</strong>, rather than duplicating the chili and cheese modifiers directly across every combo.</p>
+<p>The AI should also recognize phrases that strongly imply a sub-item. Examples include:</p>
+<ul>
+<li>“When they choose this side, ask them…”</li>
+<li>“Let them customize the fries further.”</li>
+<li>“If they pick salad, then ask for dressing.”</li>
+<li>“This option has its own modifiers.”</li>
+<li>“Use the same options as the standalone fries.”</li>
+<li>“I don't want to rebuild the modifiers for every combo.”</li>
+</ul>
+<p>Those should map conceptually to:</p>
+<p><strong>Ingredient → link Sub-Item → existing Item with desired modifiers</strong></p>
+<p>A second recommendation is to add a <strong>reuse-first rule</strong>. Before creating new modifiers, ingredients, or duplicate items, the AI should check whether an existing standalone item already contains the needed configuration and could be referenced as a sub-item.</p>
+<p>For example, instead of creating:
+<strong>Burger Fries → Burger Fries Chili → Burger Fries Cheese</strong></p>
+<p>the preferred architecture is:</p>
+<p><strong>Fries Item</strong>
+→ Chili / Cheese modifiers</p>
+<p>and then:</p>
+<p><strong>Burger Combo</strong>
+→ Side modifier
+→ Fries ingredient
+→ Sub-item = Fries Item</p>
+<p>This creates one reusable source of truth.</p>
+<p>Finally, documentation for the AI should distinguish between three different types of nesting:</p>
+<p><strong>Item → Modifier → Ingredient</strong> is normal item configuration.</p>
+<p><strong>Ingredient → Context</strong> changes how that ingredient behaves or is priced.</p>
+<p><strong>Ingredient → Sub-Item → Modifier → Ingredient</strong> means the ingredient itself can be customized further.</p>
+<p>That distinction appears central to understanding how this menu model is intended to work.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

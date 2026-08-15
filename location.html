@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>LOcaTioN</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sun, December 15, 2024">Sun, December 15, 2024</time>
+        <h1 class="mar-b-7">LOcaTioN</h1>
+    </header>
+    <p>Here’s a cleaned-up summary of what was said:</p>
+<p>The main point is that we should <strong>build on the existing location-access model rather than reinvent it</strong>, but there are some real complications.</p>
+<p><code>show all locations</code> seems unused or irrelevant today. <code>location_id</code> is intended to represent the <strong>single location the user is actively looking at</strong>, so when a user asks something like “What are my sales at this location?”, the system can filter the query to that location.</p>
+<p>The hard part is that access is not one-dimensional. A user may have access to <strong>sales data across many locations</strong>, but only have access to <strong>payroll data for some locations</strong>. Because of that, narrowing the location list correctly would require first understanding what kind of question the user is asking: sales, payroll, or something else. That likely means an extra LLM classification step before the main flow, which could add latency.</p>
+<p>One possible product discussion is whether there are common cases we can optimize for. For example, if a store manager only has sales and payroll access for one location, maybe we can automatically limit the location context to that one location and ignore the rest of the account’s locations when building the location list.</p>
+<p>Overall concern: this will likely affect a lot of users, especially store managers, so it is worth discussing with Product before deciding how much complexity to take on.</p>
+<p>Here’s the cleaned-up version of the added discussion:</p>
+<p>The expected workflow is that the NLM query already has access to the <strong>account ID</strong> and, where applicable, the <strong>location ID</strong>. These are already available in the current flow, so the proposal is to reuse them rather than introduce a completely new mechanism.</p>
+<p>If the user does <strong>not</strong> provide a location in the natural-language question, the system should use the user’s <strong>allowed location list</strong>. If the user does provide a location hint, for example, “What are the sales for my Pune location?”, then an LLM call can be used to match that location mention against the locations the user has access to.</p>
+<p>Once the location is resolved, the generated SQL should be inspected before execution to ensure that the required filters are present. The query should always include the <strong>account ID from the token</strong> and the resolved/allowed <strong>location IDs</strong>. If those required values are missing, the query should not execute and should instead exit gracefully.</p>
+<p>The current safety mechanism is largely handled through <strong>TVFs</strong>. The team has effectively replaced direct PTC access with <strong>TVF-backed PTCs</strong> that require <code>account_id</code> and <code>location_id</code> as parameters. Because those parameters are mandatory, the query cannot be invoked without the appropriate access constraints.</p>
+<p>The initially agreed workflow did <strong>not</strong> rely heavily on the JWT <code>location_id</code>, because that field supports only a single integer value. It cannot represent multiple locations. A value like <code>0</code> generally means “all locations,” which is mainly associated with admin or super-user accounts. For non-admin users, relying on the JWT <code>location_id</code> is not sufficient for RBAC because their permissions may involve multiple allowed locations or more granular access.</p>
+<p>Henry’s point was that although the JWT <code>location_id</code> has limitations, it can still be useful for the most common querying scenarios and should probably be used where it makes sense. However, the broader location-access problem still needs product input, because permissions appear to be defined at a very granular level, almost at the query level.</p>
+<p>A possible final framing:</p>
+<blockquote>
+  <p>Use the existing account/location access model as the foundation. Resolve location from the user query only when the user explicitly hints at one; otherwise, fall back to the allowed location list. Enforce access at execution time through TVFs that require account and location parameters, and do not execute any generated SQL unless those filters are present. The JWT <code>location_id</code> can help in common cases, but it should not be the sole source of truth for RBAC because it only supports a single value or “all.”</p>
+</blockquote>
+<p>Part 2</p>
+<p>Hello everyone, I want to walk through the proposed location permission fix in simple terms.</p>
+<p>The issue is not that users are missing data, and it is not that the reporting system is broken. The issue is that our permission check is too broad for a common use case.</p>
+<p>Today, some users only have access to one location. That is normal and expected. But in some report flows, our current logic effectively asks, “Does this user have permission across all locations?” before allowing the query.</p>
+<p>That means even if a user has valid permission for their own location, they can still be blocked with a “table access denied” error.</p>
+<p>The proposed fix changes that logic for single-location users.</p>
+<p>Instead of asking, “Does this user have permission everywhere?” we ask, “Does this user have permission for the specific location they are trying to view?”</p>
+<p>So if a user is viewing one location, we check that exact location. If they have permission for it, we allow the report. If they do not, we block them.</p>
+<p>For users viewing all locations, nothing changes. That flow still uses the stricter all-location validation, because viewing all locations is a broader access case and should remain more restricted.</p>
+<p>So the behavior becomes more accurate without becoming more permissive.</p>
+<p>Why does this matter?</p>
+<p>It fixes a frustrating product issue where legitimate users were denied access to reports they should be able to see. For example, a restaurant manager may only be allowed to see one store. That is valid access. The system should not treat that manager as if they are trying to access the entire business.</p>
+<p>The new logic better matches the product expectation:</p>
+<p>If I have access to my location, I should be able to see my location’s reports.</p>
+<p>If I do not have the required sales permission, I should be blocked.</p>
+<p>And if I am trying to view all locations, the stricter access checks still apply.</p>
+<p>This fix is focused specifically on the permission-denied category of reporting issues. Sonia’s testing found several categories of issues, but this change addresses cases where a user has valid access to one or a few locations and is incorrectly blocked because the system checks the full account or full location set.</p>
+<p>It does not fix unrelated issues, such as test accounts with no sales data in BigQuery, semantic-layer example query gaps, or questions that map to tables we have not fully modeled yet. Those are separate follow-up items.</p>
+<p>The value of this fix is that it removes false access-denied blockers for users who do have valid location-level permission.</p>
+<p>The fix also addresses a related single-location time zone edge case. Date-based reporting will now use the selected location’s time zone instead of treating the user’s full location list as ambiguous.</p>
+<p>From a security perspective, this does not open up data across all locations. The report query only receives the location the user is allowed to view. We are not giving the model or query engine a broader list of locations. We are narrowing the check to the user’s actual location context.</p>
+<p>So this is not loosening security. It is correcting an overly strict check that was blocking valid single-location users.</p>
+<p>The expected impact is fewer false “table access denied” errors for users who have partial but valid location permissions.</p>
+<p>Yes. The strongest point is to <strong>separate the minimal permission fix from the broader product behavior change</strong>.</p>
+<p>The current PR sounds safe if it only says: <strong>when the request is already scoped to one selected location, validate permission for that location only.</strong>
+The bigger discussion is: <strong>should the assistant default to the clicked-in location instead of all locations?</strong> That is a product behavior change and should probably be documented.</p>
+<p>You can use this:</p>
+<p>A good way to frame this is that there are two separate decisions here.</p>
+<p>First, there is the narrow permission fix. If the user is already operating in a single-location context, we should not validate them as if they are trying to access every location. We should check whether they have the required permission for the selected location. If yes, allow the report. If no, block it. That is the current fix, and it does not make access more permissive because the query still only receives the selected location.</p>
+<p>Second, there is a broader product behavior question: when a user asks a general reporting question, should we default to all allowed locations, or should we default to the location they are currently clicked into? That is separate from the permission bug fix. If we change that default behavior, then yes, we should document it and probably align with product, support, and anyone responsible for the user guide.</p>
+<p>For Brian’s concern about trade-offs, I agree there is a real trade-off. If we continue to default every broad question to all locations, then partial-permission users may still get blocked when they ask broad questions involving restricted report types. But I would not want us to silently reduce the report scope without making that clear to the user. A safer product experience would be either:</p>
+<p>“One or more locations are not available for this report. Please select a specific location.”</p>
+<p>Or:</p>
+<p>“You only have permission to view this report for Location A. Do you want to run the report for Location A?”</p>
+<p>That avoids exposing unauthorized data, and it also avoids giving the user a partial answer while making them think it covers the whole business.</p>
+<p>For the current PR, my recommendation would be to keep the scope narrow: fix the false denial when the selected context is one location. All-location requests should continue to use the stricter validation. That gives us an immediate improvement without changing the entire reporting philosophy.</p>
+<p>Then, as a follow-up product decision, we can decide whether the assistant should default to the clicked-in location, all accessible locations, or ask the user to clarify when permissions differ by location.</p>
+<p>The important safety requirement is that the permission check and the query scope must match. If we validate the user for one location, the query should only receive that one location. We should not validate narrowly and then query broadly.</p>
+<p>So my answer is: I support the proposed fix for single-location context. I also agree that changing the default from “all locations” to “current location” is a bigger UX/product decision and should be called out in the guide or release notes.</p>
+<p>A few strong points you can raise in the discussion:</p>
+<p><strong>1. Clarify that the PR is not solving every reporting issue.</strong>
+It only fixes false “table access denied” cases caused by overly broad location permission validation.</p>
+<p><strong>2. Do not silently downgrade “all locations” to “one location” unless product agrees.</strong>
+That could confuse users because they may think they are seeing all-business results when they are only seeing one location.</p>
+<p><strong>3. Best safe behavior for partial permissions:</strong>
+If the user asks broadly and only has permission for some locations, either ask them to pick a location or clearly state the narrowed scope.</p>
+<p><strong>4. Permission and query scope must always match.</strong>
+If we check permission for Location A, then only Location A should be sent to the query engine.</p>
+<p><strong>5. Defaulting to the clicked-in location is reasonable, but it is a UX change.</strong>
+That should be documented because users may currently expect broader analysis.</p>
+<p><strong>6. The fix should fail closed.</strong>
+If location context is ambiguous, missing, or contains multiple locations, use the stricter validation or ask for clarification rather than guessing.</p>
+<p>A concise answer you can say live:</p>
+<blockquote>
+  <p>I think the current PR is safe as long as it only applies when the user is clearly in a single-location context. We are not expanding access; we are aligning the permission check with the actual location being queried. But I agree there is a separate product question around default behavior. If we want to default to the clicked-in location instead of all locations, that should be documented and aligned with product because it changes user expectations.</p>
+</blockquote>
+<p>Yes — the answer should be:</p>
+<p><strong>We should not always treat the default as “all locations the user has access to” if the user’s session is already scoped to a specific location.</strong></p>
+<p>A cleaner way to explain it:</p>
+<p>I think we should distinguish between the user’s full accessible location list and the effective location scope for the current report request.</p>
+<p>The user may technically have access to multiple locations, but if their current session or UI context is scoped to one selected location, then the report request should use that selected location as the effective scope.</p>
+<p>So in that case, we should not default the query to all locations the user has access to. We should validate and query only against the selected location.</p>
+<p>If the user explicitly asks for all locations, or if there is no selected location context, then we can fall back to the broader “all accessible locations” behavior and apply the stricter permission validation.</p>
+<p>So the precedence should probably be:</p>
+<ol>
+<li>If the user explicitly asks for a specific location, use that location and validate permission for it.</li>
+<li>If the session has a selected location ID, use that selected location and validate permission for it.</li>
+<li>If the user asks for all locations, use all accessible locations and apply stricter validation.</li>
+<li>If the scope is ambiguous, either use the current selected location or ask the user to clarify, depending on the product decision.</li>
+</ol>
+<p>That way, the permission check matches the actual query scope. We avoid false “table access denied” errors, but we also avoid accidentally giving broader access than intended.</p>
+<p>The key point to say live is:</p>
+<blockquote>
+  <p>The default should be based on the <strong>effective report context</strong>, not always the user’s full location access list.</p>
+</blockquote>
+<p>So if the session is already filtered by <code>locationId</code>, then the default for that report should be that location. The user’s full accessible location list still matters for validating what they <em>could</em> access, but it should not automatically become the query scope.</p>
+<p>Here’s a brief summary you can send to A team:</p>
+<p>Hi all,</p>
+<p>I wanted to summarize the reporting access issue we discussed today and the current direction.</p>
+<p>We have been investigating cases where users receive “table access denied” errors when asking reporting questions. One identified issue is that our current permission validation can be too broad for users who only have access to a specific location, or who have limited permissions such as access to only certain report categories like tips, payroll, or sales.</p>
+<p>The initial proposed fix was focused on a narrower case: when the user is clearly scoped to a single location, we would validate their permission against that selected location instead of checking whether they have permission across all locations. This would help reduce false access-denied errors for legitimate single-location or location-level users, while still keeping stricter validation in place for true all-location requests.</p>
+<p>However, during the discussion, we agreed that the larger issue may require a broader requirements pass. The core question is not only how to fix the single-location permission check, but also how the reporting experience should behave when users have partial permissions across locations or report categories.</p>
+<p>For example, we need to clarify:</p>
+<ul>
+<li>Should the assistant default to the user’s currently selected location or all locations the user can access?</li>
+<li>If a user has permission for only some report types, such as tips but not payroll, how should the assistant determine intent before running the query?</li>
+<li>If the user asks a broad question but only has permission for part of the requested data, should we narrow the scope, ask for clarification, or block the request?</li>
+<li>How do we make sure the permission check always matches the actual query scope?</li>
+</ul>
+<p>The current PR may still be useful for the specific single-location false-denial scenario, but we should treat it as part of a larger product and permission-model discussion rather than the complete solution.</p>
+<p>The proposed next step is for Autumn and me to take a step back, define the broader requirements, and then review the approach with Luke and the team. I will also sync with the dev team so we are aligned before we move forward or send out a final recommendation.</p>
+<p>Thanks,
+Henry</p>
+<p>A good shorter version to say internally is:</p>
+<blockquote>
+  <p>The single-location fix is valid, but the bigger issue is broader than one permission check. We need requirements around location scope, report-category permissions, and how the assistant should behave when a user has partial access. The safest next step is to align on the expected product behavior before treating the current PR as the full solution.</p>
+</blockquote>
+<p>PHASE 2
+<strong>Yes, it was mostly answered.</strong></p>
+<p>The answer given was: <strong>today, the chatbot is only available from a specific location context, not from the account level.</strong> So when the user does not specify a location in the question, the assistant should use the location the user is currently clicked into / logged into.</p>
+<p>One-sentence version:</p>
+<p><strong>Yes — they answered that because users currently access the chatbot from inside a specific location, the intended default location context is the selected/clicked-in location, not all account locations.</strong></p>
+<p>Yes — this part <strong>answers and reframes the product question clearly</strong>.</p>
+<p>The team aligned on this:</p>
+<p><strong>Current state:</strong> Users may get answers across locations, but if they do not have access to all locations, the system denies access because the current flow is effectively “all-or-nothing.”</p>
+<p><strong>Short-term fix:</strong> Improve the user-facing message instead of showing a generic “table access denied.”</p>
+<p><strong>Phase 2 fix:</strong> Add clarification behavior. If the user has access to only some locations, the chatbot should ask which allowed location they want to query instead of simply denying access.</p>
+<p><strong>Single-location case:</strong> If the user only has access to one location, do not ask a follow-up question. Default to that one location and answer.</p>
+<h2 id="recommendedsummarytosendback">Recommended summary to send back</h2>
+<p>The alignment from the discussion is that the current defect should be handled in two layers.</p>
+<p>For the short term, we should improve the access-denied messaging so users understand that the issue is not a system failure, but that the question requires access to all locations and they only have access to a subset of locations.</p>
+<p>For Phase 2, this should be handled through the clarification flow. If a user asks a broad reporting question but only has access to some locations, the assistant should ask a follow-up question such as: “You have access to these locations. Which location would you like to view?” If the user has access to only one location, we should not ask a follow-up question and should default to that location.</p>
+<p>Henry will create a defect for the current issue, and the Phase 2 clarification/location-selection stories should be linked as dependencies so that once Phase 2 is implemented, this defect can be fully resolved.</p>
+<h2 id="suggesteduserfacingcopy">Suggested user-facing copy</h2>
+<p>I can’t answer this for all locations because your access is limited to specific locations. Please ask about one of the locations you have access to, or select a specific location and try again.</p>
+<p>A slightly friendlier Phase 2 version would be:</p>
+<p>You have access to multiple locations, but not all locations for this account. Which location would you like me to use for this report?</p>
+<p>The strongest takeaway is: <strong>short-term = better denial message; long-term = clarify location intent and only query allowed locations.</strong></p>
+<p>Final verdict: <strong>yes, the meeting reached alignment.</strong></p>
+<p>The outcome is:</p>
+<p><strong>1. The current issue is real, but the current system is behaving according to its current all-or-nothing design.</strong>
+If a user asks a broad reporting question and does not have access to all locations, the system denies access rather than answering for only the subset of locations they can access.</p>
+<p><strong>2. The short-term action is not a big permission behavior change.</strong>
+For now, improve the error message so users understand why they are blocked.</p>
+<p>Suggested copy:</p>
+<blockquote>
+  <p>I can’t answer this for all locations because your access is limited to specific locations. Please ask about one of the locations you have access to, or select a specific location and try again.</p>
+</blockquote>
+<p><strong>3. The proper long-term fix belongs in Phase 2.</strong>
+Phase 2 should add clarification behavior: if the user has access to some locations but not all, the assistant should ask which allowed location they want to use. If the user has access to only one location, default to that location without asking.</p>
+<p><strong>4. Tracking next step:</strong>
+Henry should create a defect for the current access-denied experience and link the Phase 2 clarification/location-selection work as a dependency. Once Phase 2 is implemented, that defect can likely be closed.</p>
+<p><strong>Bottom line:</strong>
+Do <strong>not</strong> quietly expand the query to all accessible locations as part of the narrow fix. Short term, improve messaging. Long term, solve it with explicit location clarification in Phase 2.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

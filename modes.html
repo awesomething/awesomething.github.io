@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Modes</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, December 15, 2023">Fri, December 15, 2023</time>
+        <h1 class="mar-b-7">Modes</h1>
+    </header>
+    <p>NB: <strong>modes could help resolve the architecture tension</strong>, provided each mode represents a genuinely different execution path, not just a different screen.</p>
+<p>The two experiences would represent different contracts:</p>
+<ul>
+<li><strong>Standard mode:</strong> answer normal questions through the existing RAG or conversational pipeline.</li>
+<li><strong>Find Menu mode:</strong> search menu data using menu-specific tools, filters, and structured results.</li>
+</ul>
+<h2 id="howmodeshelpthearchitecture">How modes help the architecture</h2>
+<p>An explicit mode can determine the broad route before the orchestrator is called.</p>
+<pre><code class="text language-text">User request
+    ↓
+Global deterministic checks
+    ↓
+Was a mode explicitly selected?
+    ├─ Standard
+    │      → Existing RAG or general-answer pipeline
+    │
+    ├─ Analyze business data
+    │      → Analytics readiness checks
+    │      → Location/time-range clarification
+    │      → Analytics agent
+    │
+    ├─ Find Menu
+    │      → Menu-specific readiness checks
+    │      → Menu search tools
+    │      → Structured menu response
+    │
+    └─ Auto
+           → Existing orchestrator selects the route
+</code></pre>
+<p>This does not give the orchestrator another job. When the user explicitly selects a mode, the application can bypass general routing and invoke the relevant pipeline directly.</p>
+<h2 id="recommendedmodes">Recommended modes</h2>
+<h3 id="standard">Standard</h3>
+<p>For normal questions and straightforward RAG retrieval.</p>
+<ul>
+<li>Fast response</li>
+<li>Existing knowledge or document-retrieval flow</li>
+<li>No location or menu checks unless required by the selected use case</li>
+<li>Minimal additional processing</li>
+</ul>
+<h3 id="analyzebusinessdata">Analyze business data</h3>
+<p>For questions involving sales, performance, locations, time ranges, metrics, or operational data.</p>
+<ul>
+<li>Runs analytics-specific readiness checks</li>
+<li>Automatically uses the location when the user has exactly one</li>
+<li>Clarifies only when multiple valid locations remain</li>
+<li>Resolves time ranges and other required business parameters</li>
+<li>Uses analytics tools and agents</li>
+</ul>
+<h3 id="findmenu">Find Menu</h3>
+<p>For requests such as:</p>
+<ul>
+<li>“Show me the dinner menu.”</li>
+<li>“Find vegetarian items.”</li>
+<li>“Which menu items contain chicken?”</li>
+<li>“What desserts are available at this location?”</li>
+<li>“Show me items under $15.”</li>
+</ul>
+<p>This mode can:</p>
+<ul>
+<li>Search menu items directly</li>
+<li>Apply category, dietary, ingredient, price, and availability filters</li>
+<li>Use location only when menu availability differs by location</li>
+<li>Return structured menu cards or grouped results</li>
+<li>Avoid running analytics or general RAG logic unnecessarily</li>
+</ul>
+<h2 id="menuspecificreadiness">Menu-specific readiness</h2>
+<p>The menu pipeline should run only the checks required for the request.</p>
+<pre><code class="text language-text">Find Menu selected
+    ↓
+Is location required for menu availability?
+    ├─ No → Search the shared menu
+    └─ Yes
+          ↓
+      One authorized location?
+          ├─ Yes → Auto-resolve
+          └─ Multiple locations
+                 ↓
+          Was one clearly specified?
+              ├─ Yes → Continue
+              └─ No → Ask which location
+</code></pre>
+<p>Other readiness fields may include:</p>
+<ul>
+<li>Menu category</li>
+<li>Meal period</li>
+<li>Dietary preference</li>
+<li>Ingredient restriction</li>
+<li>Price range</li>
+<li>Availability date or time</li>
+</ul>
+<p>These should not all be mandatory. The system should only clarify when a missing value is genuinely required to produce a valid result.</p>
+<h2 id="donotforceamodeselectioneverytime">Do not force a mode selection every time</h2>
+<p>The default can remain <strong>Auto</strong> or <strong>Standard</strong>.</p>
+<p>The system may suggest another mode when appropriate:</p>
+<blockquote>
+  <p>“This looks like a menu search. Open it in Find Menu?”</p>
+</blockquote>
+<p>or:</p>
+<blockquote>
+  <p>“This question requires business reporting data. Continue in Analyze mode?”</p>
+</blockquote>
+<p>The user should not be interrupted for every request.</p>
+<h2 id="modesdonotreplacereadinesschecks">Modes do not replace readiness checks</h2>
+<p>Modes define <strong>which readiness rules apply</strong>.</p>
+<pre><code class="text language-text">Standard
+- Global checks only
+- Usually no location readiness
+
+Analyze business data
+- Location
+- Time range
+- Metric
+- Business access
+
+Find Menu
+- Location when menu-specific
+- Category or meal period when essential
+- Dietary or ingredient filters when supplied
+</code></pre>
+<p>This solves the latency concern because a normal RAG question does not run location, sales, or menu-specific checks.</p>
+<h2 id="comparison">Comparison</h2>
+<p>| Standard                       | Analyze business data          | Find Menu                                 |
+| ------------------------------ | ------------------------------ | ----------------------------------------- |
+| General questions              | Sales and operational analysis | Menu discovery                            |
+| RAG or conversational answers  | Analytics tools and agents     | Menu-search tools                         |
+| Low latency                    | May require clarification      | Structured filtering                      |
+| Usually no location dependency | Often location-dependent       | Location-dependent only when menus differ |
+| Narrative response             | Tables, metrics, and insights  | Menu items, categories, and availability  |</p>
+<h2 id="recommendedroutingpolicy">Recommended routing policy</h2>
+<pre><code class="text language-text">Explicit mode selected
+    → Invoke that pipeline directly
+
+No mode selected
+    → Existing orchestrator selects the route
+</code></pre>
+<p>A concise way to present it to the team is:</p>
+<blockquote>
+  <p>“Modes let the user declare the type of task they want. Standard handles general questions, Analyze handles business data, and Find Menu handles menu discovery. When a mode is explicitly selected, we can bypass general orchestration and run only the readiness checks and tools relevant to that pipeline. The existing orchestrator remains the fallback when no mode is selected.”</p>
+</blockquote>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

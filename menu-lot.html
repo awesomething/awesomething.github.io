@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Menu Lot</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Mon, March 10, 2025">Mon, March 10, 2025</time>
+        <h1 class="mar-b-7">Menu Lot</h1>
+    </header>
+    <h2 id="thoughts">Thoughts</h2>
+<p>The overall direction is sound: keep the existing production agents intact, introduce a new pre-orchestrator, and roll out entity enrichment incrementally. Making each detector an independently testable tool is especially strong because language, time, location, menu items, modifiers, and quantities will require different implementation strategies.</p>
+<p>The embedding approach also appears practical. Using a dedicated <code>embedding_text</code> field with filterable metadata such as account ID, location ID, entity type, and status should reduce irrelevant semantic matches and prevent unnecessary downstream RAG and SQL execution.</p>
+<p>The main concern is that the architecture currently seems more mature than the entity contract and decision policy. The team is building detectors before fully defining:</p>
+<ul>
+<li>Which entities are supported</li>
+<li>How each entity is grounded</li>
+<li>How conflicts are resolved</li>
+<li>When the system clarifies, defaults, rejects, or continues</li>
+<li>What gets stored as preference versus conversation history</li>
+</ul>
+<p>Those decisions will affect every detector and the orchestrator state schema.</p>
+<h2 id="verdict">Verdict</h2>
+<p><strong>Proceed with the architecture, but do not scale implementation across all entities until the common entity model and orchestration rules are finalized.</strong></p>
+<p>The proposed architecture is a good foundation for phased rollout. However, entity detection should not become a collection of independently behaving tools with inconsistent outputs and confidence logic. The orchestrator needs a deterministic contract governing all detectors.</p>
+<p>The strongest parts are:</p>
+<ul>
+<li>Phased rollout without replacing existing production behavior</li>
+<li>Independent and parallel development of entity detectors</li>
+<li>Metadata-filtered semantic search</li>
+<li>Early short-circuiting for unsupported languages or inaccessible resources</li>
+<li>Collecting all required clarifications in one user interaction</li>
+<li>Preserving enrichment results in shared state</li>
+<li>Separating the new streaming implementation from the legacy helper</li>
+</ul>
+<p>The greatest risks are:</p>
+<ul>
+<li>Undefined overlapping-entity behavior</li>
+<li>Stale embeddings after menu changes</li>
+<li>Too many false short-circuits</li>
+<li>Persisting temporary choices as long-term preferences</li>
+<li>Parallel tools producing contradictory state</li>
+<li>Streaming internal detector output directly to users</li>
+<li>Multiple BigQuery tables with overlapping responsibilities</li>
+</ul>
+<h2 id="recommendations">Recommendations</h2>
+<h3 id="1finalizeacanonicalentitycontractfirst">1. Finalize a canonical entity contract first</h3>
+<p>Every detector should return the same structure, for example:</p>
+<pre><code class="json language-json">{
+  "entity_type": "menu_item",
+  "raw_text": "large coke",
+  "normalized_value": "Coca-Cola",
+  "canonical_id": "menu_item_123",
+  "confidence": 0.91,
+  "grounding_status": "grounded",
+  "candidates": [],
+  "source": "semantic_search",
+  "scope": {
+    "account_id": "account_1",
+    "location_id": "location_4"
+  },
+  "requires_clarification": false
+}
+</code></pre>
+<p>Without this, integration effort will increase with every new detector.</p>
+<h3 id="2separatedetectiongroundingandresolution">2. Separate detection, grounding, and resolution</h3>
+<p>These are three different responsibilities:</p>
+<ol>
+<li><strong>Detection:</strong> “pizza” appears to be a menu-related entity.</li>
+<li><strong>Grounding:</strong> It matches four menu items available at this location.</li>
+<li><strong>Resolution:</strong> Select one, apply a safe default, or ask the user.</li>
+</ol>
+<p>Do not combine all three inside every detector. Detectors should identify candidates; a centralized resolution policy should determine the next action.</p>
+<h3 id="3createanexplicitambiguitypolicy">3. Create an explicit ambiguity policy</h3>
+<p>Define thresholds centrally:</p>
+<ul>
+<li>High confidence and one grounded result: continue</li>
+<li>Multiple strong results: clarify</li>
+<li>Low confidence: leave unresolved or clarify</li>
+<li>Unsupported or unauthorized entity: short-circuit</li>
+<li>Optional entity missing: continue with default</li>
+<li>Required entity missing: clarify</li>
+</ul>
+<p>This will address the overlapping-entity issue without forcing every tool to invent its own behavior.</p>
+<h3 id="4rundetectorsinparallelbutresolvecentrally">4. Run detectors in parallel, but resolve centrally</h3>
+<p>Parallel execution is appropriate for latency, but all results should pass through a single reconciliation step before classification.</p>
+<p>For example, “large Washington pizza” could produce:</p>
+<ul>
+<li><code>large</code> → modifier or quantity</li>
+<li><code>Washington</code> → location or menu-item name</li>
+<li><code>pizza</code> → menu category or menu item</li>
+</ul>
+<p>The reconciliation layer should inspect all candidates together rather than accepting detector outputs independently.</p>
+<h3 id="5avoidstreamingrawenrichmenttooloutput">5. Avoid streaming raw enrichment-tool output</h3>
+<p>Entity detection, grounding, and authorization checks are internal processing steps. Streaming every tool response could expose noisy or confusing information.</p>
+<p>Stream only user-relevant status or final clarification messages, such as:</p>
+<ul>
+<li>“I found several sandwich options.”</li>
+<li>“I cannot access the requested location.”</li>
+<li>“Please confirm the menu item and location.”</li>
+</ul>
+<p>Internal embeddings, confidence values, metadata filters, and intermediate candidates should remain internal unless transparency requirements explicitly demand them.</p>
+<h3 id="6treatshortcircuitingcarefully">6. Treat short-circuiting carefully</h3>
+<p>Short-circuiting is valuable, but only for definitive conditions:</p>
+<ul>
+<li>Unsupported language</li>
+<li>Invalid authentication</li>
+<li>No accessible locations</li>
+<li>Explicitly unavailable entity</li>
+<li>Missing required context that cannot be defaulted</li>
+</ul>
+<p>Do not short-circuit solely because semantic search returns no menu match. Misspellings, synonyms, stale embeddings, and new menu items can create false negatives. In those situations, clarification or fallback search may be safer.</p>
+<h3 id="7defineembeddingsynchronizationbeforeproduction">7. Define embedding synchronization before production</h3>
+<p>The menu embedding pipeline should handle:</p>
+<ul>
+<li>New items</li>
+<li>Renamed items</li>
+<li>Deleted or disabled items</li>
+<li>Location availability changes</li>
+<li>Modifier changes</li>
+<li>Account-level overrides</li>
+</ul>
+<p>Use a stable canonical ID and version or update timestamp. Prefer event-driven updates where possible, with a periodic reconciliation job as backup.</p>
+<p>Deleted items should be removed or marked inactive so they cannot continue appearing in results.</p>
+<h3 id="8distinguishthreetypesofmemory">8. Distinguish three types of memory</h3>
+<p>The discussion appears to mix different concepts:</p>
+<p><strong>Profile preferences</strong>
+Stable information such as preferred location, language, or commonly selected item.</p>
+<p><strong>Session or conversational memory</strong>
+Information needed only during the current conversation.</p>
+<p><strong>Interaction and audit logs</strong>
+What the user asked, what the system detected, what was suggested, and what the user selected.</p>
+<p>These should not automatically feed one another. A user selecting a sandwich once should not become a permanent preference. Promotion to long-term preference should require repetition, an explicit user statement, or a confidence policy.</p>
+<h3 id="9keepthetwobigquerytablepurposesdistinct">9. Keep the two BigQuery table purposes distinct</h3>
+<p>A reasonable separation would be:</p>
+<p><strong>Interaction table</strong></p>
+<ul>
+<li>Original query</li>
+<li>Summarized intent</li>
+<li>Detected entities</li>
+<li>Candidate entities</li>
+<li>Clarification shown</li>
+<li>User selection</li>
+<li>Final outcome</li>
+<li>Timestamps and trace ID</li>
+</ul>
+<p><strong>User preference table</strong></p>
+<ul>
+<li>Preference type</li>
+<li>Canonical value</li>
+<li>Confidence</li>
+<li>Evidence count</li>
+<li>Last confirmed time</li>
+<li>Source</li>
+<li>Expiry or decay policy</li>
+</ul>
+<p>Avoid storing the full streaming response as the primary memory representation. Store concise structured summaries and retain raw traces only for debugging or audit purposes.</p>
+<h3 id="10batchclarificationintooneturn">10. Batch clarification into one turn</h3>
+<p>The proposed “single-go” clarification is the right approach. The orchestrator should collect all unresolved required fields first, then ask one consolidated question.</p>
+<p>For example:</p>
+<blockquote>
+  <p>I found two possible locations and four sandwich items. Which location and sandwich should I use?</p>
+</blockquote>
+<p>The system should not ask sequential questions unless the answer to the first question materially changes the remaining options.</p>
+<h3 id="11keepclassificationafterenrichmentbutimposealatencybudget">11. Keep classification after enrichment, but impose a latency budget</h3>
+<p>Moving enrichment before classification makes sense because the classifier can use grounded entities instead of interpreting everything itself. However, every detector should have a strict timeout.</p>
+<p>Optional enrichment should not block the whole request. Required detectors may block, but optional detectors should fail gracefully.</p>
+<h3 id="12addobservabilityfromthebeginning">12. Add observability from the beginning</h3>
+<p>Track at least:</p>
+<ul>
+<li>Detector latency</li>
+<li>Grounding success rate</li>
+<li>Clarification rate</li>
+<li>User correction rate</li>
+<li>False short-circuit rate</li>
+<li>No-match rate</li>
+<li>Number of candidates per entity</li>
+<li>Percentage of defaults later changed by users</li>
+<li>Embedding freshness</li>
+<li>End-to-end latency added by enrichment</li>
+</ul>
+<p>The most valuable quality metric may be <strong>user correction rate after automatic resolution</strong>. High correction rates indicate that confidence thresholds or grounding rules are too aggressive.</p>
+<h2 id="recommendedimplementationorder">Recommended implementation order</h2>
+<ol>
+<li>Finalize supported entity list and grounding sources.</li>
+<li>Define the canonical entity and orchestrator-state schemas.</li>
+<li>Define confidence, conflict, clarification, and short-circuit policies.</li>
+<li>Implement language and authorization/location checks.</li>
+<li>Implement menu-item grounding and embedding synchronization.</li>
+<li>Add centralized ambiguity resolution.</li>
+<li>Add batched human clarification.</li>
+<li>Add structured interaction logging.</li>
+<li>Add preference-learning rules.</li>
+<li>Add streaming for user-facing events.</li>
+<li>Expand to modifiers, quantities, day parts, and additional entities.</li>
+</ol>
+<p>The architecture should not “kick overlapping entities down the road” completely. Full resolution can come later, but the schema must support multiple candidates and conflicts from the start; otherwise, the team may need to redesign every detector when ambiguity becomes unavoidable.</p>
+<h2 id="verdict-1">Verdict</h2>
+<p><strong>Providing an entity list is the right approach—provided the list defines entity types and grounding rules, not every possible entity value.</strong></p>
+<p>The disagreement appears to come from using “entity list” to mean two different things.</p>
+<h3 id="whatshouldbeprovided">What should be provided</h3>
+<p>Define the categories the system is expected to detect, such as:</p>
+<ul>
+<li>Menu item</li>
+<li>Menu category</li>
+<li>Modifier</li>
+<li>Quantity or size</li>
+<li>Location</li>
+<li>Date and time</li>
+<li>Day part</li>
+<li>Language</li>
+</ul>
+<p>For every entity type, also define:</p>
+<ul>
+<li>Its authoritative data source</li>
+<li>Whether it is required or optional</li>
+<li>Whether it must be grounded</li>
+<li>Its account and location scope</li>
+<li>How ambiguity should be handled</li>
+<li>Whether the system may default or must clarify</li>
+</ul>
+<p>This is necessary because the orchestrator needs a stable contract. Otherwise, the LLM may detect arbitrary concepts that downstream systems do not understand or cannot use.</p>
+<h3 id="whatshouldnotbeprovided">What should not be provided</h3>
+<p>Do not attempt to provide an exhaustive global list such as:</p>
+<ul>
+<li>Every burger name</li>
+<li>Every sandwich variation</li>
+<li>Every modifier</li>
+<li>Every possible menu item phrase</li>
+<li>Every possible person, place, or product name</li>
+</ul>
+<p>That would be brittle, difficult to maintain, and contrary to how semantic detection is useful.</p>
+<p>The LLM should be able to infer that:</p>
+<ul>
+<li>“Double cheeseburger” is probably a menu item</li>
+<li>“Large” is probably a size modifier</li>
+<li>“Tomorrow evening” contains time and day-part information</li>
+</ul>
+<p>It should then ground those detected candidates against the account’s actual data.</p>
+<h2 id="whytheentitytypelistisimportant">Why the entity-type list is important</h2>
+<h3 id="1itdefinesthesystemsscope">1. It defines the system’s scope</h3>
+<p>An LLM can identify hundreds of possible semantic concepts. The application only needs a controlled subset.</p>
+<p>For example, the phrase:</p>
+<blockquote>
+  <p>Show sales of large burgers near Boston yesterday.</p>
+</blockquote>
+<p>could contain:</p>
+<ul>
+<li>Menu item or category: burger</li>
+<li>Modifier: large</li>
+<li>Location: Boston</li>
+<li>Time: yesterday</li>
+<li>Intent: sales analysis</li>
+</ul>
+<p>The entity list tells the system which parts should be extracted and stored in the enrichment state.</p>
+<h3 id="2itcreatesacontractbetweenproductandengineering">2. It creates a contract between product and engineering</h3>
+<p>Product must decide what behavior is supported. Engineering should not independently guess whether the system needs to detect:</p>
+<ul>
+<li>Menu categories</li>
+<li>Individual menu items</li>
+<li>Ingredients</li>
+<li>Dietary properties</li>
+<li>Brands</li>
+<li>Sizes</li>
+<li>Combos</li>
+<li>Locations</li>
+<li>Day parts</li>
+</ul>
+<p>That decision affects schemas, APIs, clarification UX, test cases, and grounding sources.</p>
+<h3 id="3itseparatesdetectionfromgrounding">3. It separates detection from grounding</h3>
+<p>Detection asks:</p>
+<blockquote>
+  <p>Does “double cheeseburger” appear to be a menu item?</p>
+</blockquote>
+<p>Grounding asks:</p>
+<blockquote>
+  <p>Is there a matching item available for this account and location?</p>
+</blockquote>
+<p>The LLM may successfully detect a menu item even when the business does not sell it. That does not mean detection failed. It means grounding returned no valid match.</p>
+<h3 id="4itpreventsunrestrictedllmbehavior">4. It prevents unrestricted LLM behavior</h3>
+<p>Without a supported entity schema, the LLM might return inconsistent fields across queries:</p>
+<pre><code class="json language-json">{
+  "food": "burger"
+}
+</code></pre>
+<p>then:</p>
+<pre><code class="json language-json">{
+  "product": "French fries"
+}
+</code></pre>
+<p>then:</p>
+<pre><code class="json language-json">{
+  "dish_category": "pasta"
+}
+</code></pre>
+<p>A predefined entity model ensures that these consistently return something like:</p>
+<pre><code class="json language-json">{
+  "entity_type": "menu_item_or_category",
+  "raw_text": "burger",
+  "grounded_candidates": []
+}
+</code></pre>
+<h3 id="5itenablesreliableclarification">5. It enables reliable clarification</h3>
+<p>The system cannot ask good clarification questions unless it knows which entity types are relevant.</p>
+<p>For example:</p>
+<blockquote>
+  <p>Did you mean the Double Cheeseburger, Bacon Burger, or Veggie Burger?</p>
+</blockquote>
+<p>That clarification is only possible because “burger” was detected as a supported menu entity and then grounded to several account-specific candidates.</p>
+<h2 id="thekeydistinctioncategoryversuscanonicalvalue">The key distinction: category versus canonical value</h2>
+<p>“Burger” may be interpreted differently depending on the business data:</p>
+<ul>
+<li>A menu category</li>
+<li>A generic menu-item concept</li>
+<li>An exact menu item</li>
+<li>Part of several detailed menu-item names</li>
+</ul>
+<p>The detector should not force a premature distinction. It can return a broader candidate first and let grounding determine what exists in the account’s data.</p>
+<p>For example:</p>
+<pre><code class="json language-json">{
+  "entity_type": "menu",
+  "raw_text": "burger",
+  "possible_subtypes": ["menu_category", "menu_item"],
+  "grounded_candidates": [
+    "Double Cheeseburger",
+    "Veggie Burger",
+    "Chicken Burger"
+  ],
+  "resolution": "clarification_required"
+}
+</code></pre>
+<h2 id="recommendedpositionfortheteam">Recommended position for the team</h2>
+<p>The team should say:</p>
+<blockquote>
+  <p>We are not asking product to enumerate every possible burger, sandwich, or menu-item value. We are asking product to define the entity categories the system is expected to understand and the business source against which each category must be grounded.</p>
+</blockquote>
+<p>So the final position is:</p>
+<ul>
+<li><strong>Right:</strong> Define a bounded list of supported entity types.</li>
+<li><strong>Right:</strong> Ground detected values against account- and location-specific data.</li>
+<li><strong>Right:</strong> Let the LLM detect natural-language variations and unseen phrases.</li>
+<li><strong>Wrong:</strong> Maintain a universal exhaustive list of all possible entity values.</li>
+<li><strong>Wrong:</strong> Allow the LLM to invent arbitrary entity types with no downstream contract.</li>
+</ul>
+<p>The entity-type list does not restrict the LLM’s language understanding. It restricts the application’s output to concepts the system can reliably process.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

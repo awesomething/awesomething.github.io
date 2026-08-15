@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Args</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, April 04, 2018">Wed, April 04, 2018</time>
+        <h1 class="mar-b-7">Args</h1>
+    </header>
+    <p>At this point, the AWS side is making a legitimate architectural argument, so I would avoid defending GCP purely on “we already built it.” The stronger contribution is to force the team to define the <strong>decision criteria</strong> and distinguish strategic architecture from migration cost.</p>
+<p>You could say:</p>
+<blockquote>
+  <p>“I think the AWS argument is valid if we assume the orchestrator’s center of gravity is going to be live operational actions and AWS-hosted services. In that case, colocating orchestration with AgentCore and the operational APIs gives us simpler IAM, potentially lower latency, and fewer cross-cloud trust boundaries.</p>
+  <p>But I don’t think the decision should be ‘AWS has IAM, therefore orchestration belongs in AWS.’ We should compare the complete control plane. For each option, we should score identity and authorization, safety controls, observability, latency, cross-cloud calls, operational ownership, security certification, and how much functionality we have to rebuild.</p>
+  <p>If AWS wins that comparison long-term, then we should choose AWS. But we should explicitly account for the fact that the GCP path already has production-tested safety, streaming, DLP, model protection, telemetry, and deployment controls. Those are architectural capabilities, not just sunk implementation effort.”</p>
+</blockquote>
+<p>Then I would add one particularly important question:</p>
+<blockquote>
+  <p>“What percentage of an average request actually requires AWS operational data or an AWS action, versus reporting and conversational reasoning over GCP-resident data? That should influence where the orchestration boundary belongs.”</p>
+</blockquote>
+<p>That question matters because the team is currently arguing from assumptions about workload locality.</p>
+<h3 id="ausefulchallengetokevinslatencyargument">A useful challenge to Kevin’s latency argument</h3>
+<p>Kevin is essentially saying: “put the brain near AWS because that’s where the workload is.”</p>
+<p>You can respond:</p>
+<blockquote>
+  <p>“I agree with workload locality, but we should validate what ‘the workload’ actually is. If most turns are reporting against BigQuery and only a minority invoke a menu or transactional action in AWS, moving the orchestrator to AWS could actually invert the cross-cloud traffic rather than eliminate it.”</p>
+</blockquote>
+<p>That is a very strong neutral architecture point.</p>
+<h3 id="alsoclarifytheiamargument">Also clarify the IAM argument</h3>
+<p>Their AWS authorization point is good, but it isn’t free.</p>
+<p>You can say:</p>
+<blockquote>
+  <p>“AWS-native IAM definitely simplifies AWS-to-AWS authorization. But the user identity still originates outside that service boundary, and we still need tenant scope, restaurant scope, tool-level authorization, auditing, and propagation of that identity into downstream calls. So AWS IAM removes one integration problem; it doesn’t remove the application authorization model.”</p>
+</blockquote>
+<p>That prevents the discussion from oversimplifying “IAM solves security.”</p>
+<h3 id="thedirectioniwouldrecommendnow">The direction I would recommend now</h3>
+<p>The meeting seems to be converging toward a <strong>shared orchestration implementation with separate deployments</strong> for R/S/N. That changes the question.</p>
+<p>I’d propose this:</p>
+<blockquote>
+  <p>“If we agree the orchestrator is the same logical codebase but independently deployed for R, S, and N, then maybe our architectural requirement should be cloud-portability at the orchestration layer. Define tools behind interfaces, keep the domain logic cloud-neutral, and make AWS versus GCP a deployment decision rather than embedding cloud-specific services deeply into orchestration.”</p>
+</blockquote>
+<p>That is likely the most constructive contribution you can make right now.</p>
+<p>It gives both camps something:</p>
+<ul>
+<li>AWS can host the N orchestrator close to operational data.</li>
+<li>GCP can continue hosting R where the production controls already exist.</li>
+<li>The team avoids maintaining two fundamentally different “brains.”</li>
+<li>MCP/tool contracts become the stable abstraction.</li>
+<li>You can later consolidate on AWS or GCP without rewriting the agent behavior.</li>
+</ul>
+<p>If they ask you directly <strong>“what does GCP provide that AWS does not?”</strong>, don’t claim unique capabilities unless you can prove them. Answer:</p>
+<blockquote>
+  <p>“Probably very little that AWS fundamentally cannot provide. The GCP advantage here is maturity of <em>our implementation</em>: existing production controls, security validation, operational telemetry, integrations, and known behavior. The AWS advantage is locality to operational systems, native authorization, and likely easier infrastructure ownership. So the real decision is whether those AWS operational advantages outweigh the cost and risk of recreating the production control plane.”</p>
+</blockquote>
+<p>That is the cleanest answer to the argument currently on the table.</p>
+<p>The discussion has shifted in an important way: <strong>the pen-test / ATO advantage of keeping GCP is no longer a decisive argument</strong>, because both sides now agree the new write-capabilities and new data flows probably trigger additional security review anyway.</p>
+<p>I would adjust your position instead of continuing to defend the hybrid architecture on that basis.</p>
+<p>A useful contribution right now would be:</p>
+<blockquote>
+  <p>“I think we may be mixing two separate questions again. One is whether AgentCore itself provides enough value to justify introducing it. The other is where orchestration should live.</p>
+  <p>I agree AgentCore by itself isn't the business capability—the tools and services behind it are. Its value is standardizing how those capabilities are exposed, authenticated, governed, and invoked.</p>
+  <p>So maybe the right comparison isn't ‘AgentCore versus GCP orchestrator.’ It's: what does the end-to-end architecture look like under each orchestration option once we include identity propagation, tool authorization, write operations, observability, safety controls, and cross-cloud communication?”</p>
+</blockquote>
+<p>Then make the point that I think is currently missing:</p>
+<blockquote>
+  <p>“Since we're introducing write operations against production data, authorization needs to be evaluated at the <strong>action level</strong>, not just the infrastructure level. AWS IAM can authenticate workload-to-workload calls, but we still need to answer: does this user have permission to change <em>this restaurant's</em> price, through <em>this tool</em>, for <em>this tenant</em>? Where does that policy decision happen, and how is it propagated and audited?”</p>
+</blockquote>
+<p>That is a very valuable architecture question because <strong>IAM alone does not answer the application-level authorization problem</strong> they're discussing.</p>
+<h3 id="iwouldalsochallengeoneassumptioncarefully">I would also challenge one assumption carefully</h3>
+<p>Someone is effectively arguing:</p>
+<p><strong>AWS orchestrator → AWS AgentCore → AWS services = simpler authentication, therefore lower risk.</strong></p>
+<p>There is truth to that, but say:</p>
+<blockquote>
+  <p>“Colocation clearly simplifies service authentication. But I don't think we should equate fewer cloud boundaries with fewer authorization responsibilities. The difficult authorization problem isn't AWS service A calling AWS service B; it's preserving the end user's identity, tenant, restaurant scope, permissions, and intent all the way down to a mutation.”</p>
+</blockquote>
+<p>That reframes the issue very effectively.</p>
+<h3 id="onthepentestdebate">On the pen-test debate</h3>
+<p>I would stop saying “GCP avoids a pen test.”</p>
+<p>Instead:</p>
+<blockquote>
+  <p>“It sounds like we're going to have incremental security testing either way because we're introducing entirely new write paths. So I don't think we should use ‘no new pen test’ as the deciding factor. What we should compare is the <strong>scope</strong> of change. Keeping the existing orchestration control plane may reduce the blast radius of what has to be revalidated, whereas replacing orchestration expands the number of components and behaviors changing.”</p>
+</blockquote>
+<p>That is much more defensible.</p>
+<h3 id="andthereisabiggerarchitecturalquestionworthaskingnow">And there is a bigger architectural question worth asking now</h3>
+<p>Say:</p>
+<blockquote>
+  <p>“Before we decide where the orchestrator belongs, can we define what we expect N to become? If N is primarily going to evolve into an operational agent that changes menus, pricing, configuration, and other AWS-hosted state, then I understand the argument that its center of gravity belongs in AWS. If it remains primarily conversational analytics with occasional operational actions, the calculation may be different.”</p>
+</blockquote>
+<p>This is probably the most important unresolved question in the meeting.</p>
+<p>Because the long-term AWS argument becomes <strong>much stronger</strong> if the roadmap is:</p>
+<p><strong>chat → actions → workflows → autonomous operational routines</strong></p>
+<p>and those operational systems predominantly live in AWS.</p>
+<p>If that really is the roadmap, I would <strong>not</strong> take a hard-line “GCP orchestrator must remain” position. I would advocate for a shared orchestration framework and stable MCP/tool contracts, while allowing <strong>N to be deployed in AWS</strong> if the architecture review shows that its workload center of gravity is there.</p>
+<p>Your strongest position now is therefore not “GCP wins.”</p>
+<p>It is:</p>
+<blockquote>
+  <p>“Let's make the orchestrator portable and the tools contract-driven, then choose deployment based on the workload. We shouldn't create two different agent architectures just because the applications currently live in different clouds.”</p>
+</blockquote>
+<p>That keeps you technically credible while still protecting the considerable work already done in GCP.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+

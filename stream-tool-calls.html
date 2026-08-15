@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Stream Tool Calls</title>
+    <meta name="description" content="Blog of an AI Engineer"/>
+    <meta name="keywords" content="blog,developer blog,ai engineering blog"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/shades-of-purple.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/awesomething" class="link-github">GitHub</a>
+        <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a>
+        <a href="mailto:henryebomah@gmail.com" class="link-email">Email</a>
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Tue, November 21, 2023">Tue, November 21, 2023</time>
+        <h1 class="mar-b-7">Stream Tool Calls</h1>
+    </header>
+    <p>Yes, <strong>But thread pooling should only wrap synchronous/blocking tool implementations</strong>. For ADK streaming, keep the orchestration on the asyncio event loop.</p>
+<p>Google ADK for Python already attempts to execute independent function-tool calls concurrently starting with version 1.10.0, so you may not need to implement your own parallel dispatcher. (<a href="https://adk.dev/tools-custom/performance/?utm_source=chatgpt.com" title="Increase tool performance with parallel execution - Google ADK">ADK</a>)</p>
+<h3 id="whynotreplaceasynciogatherentirelywithathreadpool">Why not replace <code>asyncio.gather()</code> entirely with a thread pool?</h3>
+<p><code>asyncio.gather()</code> coordinates async operations without occupying OS threads while they wait for network I/O. A <code>ThreadPoolExecutor</code> is primarily useful when a tool:</p>
+<ul>
+<li>Uses a synchronous HTTP/database SDK</li>
+<li>Performs blocking file I/O</li>
+<li>Calls a library that has no async API</li>
+<li>Would otherwise block ADK’s streaming event loop</li>
+</ul>
+<p>For genuinely async tools, sending them to threads usually adds overhead and complicates cancellation, exception propagation, context variables, and streaming.</p>
+<p>A good mixed approach is:</p>
+<pre><code class="python language-python">import asyncio
+from collections.abc import Callable
+from typing import Any
+
+
+async def run_blocking_tool(
+    tool: Callable[..., Any],
+    *args: Any,
+    **kwargs: Any,
+) -&gt; Any:
+    # Runs the synchronous function in asyncio's thread pool.
+    return await asyncio.to_thread(tool, *args, **kwargs)
+
+
+async def run_tools() -&gt; list[Any]:
+    return await asyncio.gather(
+        async_network_tool(),
+        async_database_tool(),
+        run_blocking_tool(sync_legacy_tool, "input"),
+    )
+</code></pre>
+<h3 id="forstreamingresultsaseachtoolcompletes">For streaming results as each tool completes</h3>
+<p><code>gather()</code> waits until all calls finish before returning its combined result. To process completions incrementally, use <code>asyncio.as_completed()</code>:</p>
+<pre><code class="python language-python">async def stream_tool_results():
+    tasks = [
+        asyncio.create_task(async_tool_a()),
+        asyncio.create_task(async_tool_b()),
+        asyncio.create_task(
+            asyncio.to_thread(sync_tool_c)
+        ),
+    ]
+
+    for completed in asyncio.as_completed(tasks):
+        try:
+            result = await completed
+            yield result
+        except Exception as exc:
+            yield {"error": str(exc)}
+</code></pre>
+<p>This lets your application emit a tool result immediately after that particular call finishes. It does <strong>not necessarily mean ADK or the model can consume partial tool responses mid-turn</strong>; that depends on ADK’s event and runner flow. Usually each function-call response remains an atomic result, while your surrounding application can stream status and completion events.</p>
+<p>For structured cancellation and error handling on modern Python, <code>TaskGroup</code> is preferable:</p>
+<pre><code class="python language-python">async def run_parallel():
+    async with asyncio.TaskGroup() as group:
+        task_a = group.create_task(async_tool_a())
+        task_b = group.create_task(asyncio.to_thread(sync_tool_b))
+
+    return task_a.result(), task_b.result()
+</code></pre>
+<p><strong>Recommended architecture:</strong> let ADK parallelize independent tool calls, define tools as <code>async def</code> when their dependencies support async I/O, and use <code>asyncio.to_thread()</code> only at the boundary around blocking synchronous code. Avoid running the whole ADK streaming loop inside a thread pool.</p>
+<h2 id="recommendations">Recommendations</h2>
+<ol>
+<li><p><strong>Preserve the existing streaming contract.</strong>
+Keep the current <code>StreamingPayloadV2</code> JSON structure unchanged, especially required fields such as <code>user_id</code>, <code>session</code>, <code>event_type</code>, <code>event_name</code>, <code>content</code>, and metadata. Downstream consumers may rely on undocumented assumptions.</p></li>
+<li><p><strong>Change execution, not the external payload.</strong>
+Thread pooling or parallel tool execution can be introduced internally, but the resulting events should still pass through the existing serializer and validation layer before being streamed.</p></li>
+<li><p><strong>Treat ordering as part of the contract.</strong>
+Parallel execution may cause responses to arrive in a different order. Add fields such as <code>tool_call_id</code>, <code>sequence_number</code>, or <code>parent_event_id</code> within the existing extensible metadata section rather than changing established fields.</p></li>
+<li><p><strong>Do not stream raw tool responses.</strong>
+Tool outputs may differ in shape or contain non-JSON-serializable values. Normalize every result into the existing <code>content</code> field and retain the same event naming conventions.</p></li>
+<li><p><strong>Add concurrency behind a feature flag.</strong>
+Keep the current implementation as the default while enabling the new thread-pool or concurrent execution path for selected environments, sessions, or consumers.</p></li>
+<li><p><strong>Version only when compatibility cannot be maintained.</strong>
+Create a new API or payload version only when the required behavior fundamentally changes the schema, event semantics, ordering guarantees, or error handling. Keep the existing endpoint intact during migration.</p></li>
+<li><p><strong>Define error and timeout events explicitly.</strong>
+A failed parallel tool call should produce a valid existing-format event rather than terminate the entire stream. Decide whether other calls continue, are cancelled, or return partial results.</p></li>
+<li><p><strong>Run contract and security testing again.</strong>
+Even without changing the public JSON schema, concurrency changes can affect race conditions, data leakage between sessions, logging, cancellation, authorization context, and response ordering. Regression, load, and penetration testing are appropriate.</p></li>
+</ol>
+<h3 id="recommendedarchitecture">Recommended architecture</h3>
+<pre><code class="text language-text">ADK tool calls
+    ↓
+Concurrent execution
+    ↓
+Result normalization
+    ↓
+Existing StreamingPayloadV2 builder
+    ↓
+Schema validation
+    ↓
+Existing streaming API
+</code></pre>
+<p>The safest approach is to <strong>retain the current API and payload contract while replacing only the internal execution mechanism</strong>. Introduce a new API version only if the new streaming behavior cannot be represented without changing existing semantics.</p>
+</article>
+
+
+
+<footer class="text-center mar-tb-6">
+    © 2026 Henry Ebomah, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
+
