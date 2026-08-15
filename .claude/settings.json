@@ -19,7 +19,11 @@
       "Bash(python3 -c \"import yaml; print\\('pyyaml ok'\\)\")",
       "Bash(python -c \"import yaml; print\\('pyyaml ok'\\)\")",
       "Bash(python \"/c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/check_fm.py\")",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(python \"/c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/extract_transcript.py\")",
+      "Bash(python \"/c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/format_transcript.py\")",
+      "Bash(cat /c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/new_summary.md /c/Users/Honri/AppData/Local/Temp/claude/c--Users-Honri-Downloads-gitfolio/53bb05d1-e1b6-43b0-bc59-abe7189442fd/scratchpad/formatted_transcript.md)",
+      "Bash(echo)"
     ]
   }
 }
